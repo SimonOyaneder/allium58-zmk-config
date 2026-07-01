@@ -50,11 +50,11 @@
             //                     | ALT  | GUI  | LOWER|  SPACE |  | ENTER | RAISE| BSPC  | GUI   |
 
             bindings = <
-&kp ESCAPE      &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                           &kp N6     &kp N7  &kp N8      &kp N9   &kp N0    &kp MINUS
-&kp TAB         &kp Q   &kp W   &kp E         &kp R   &kp T                                            &kp Y      &kp U   &kp I       &kp O    &kp P     &kp LEFT_BRACE
-&kp LCTRL       &kp A   &kp S   &kp D         &kp F   &kp G                                            &kp H      &kp J   &kp K       &kp L    &kp SEMI  &kp RIGHT_BRACE
-&kp LEFT_SHIFT  &kp Z   &kp X   &kp C         &kp V   &kp B          &kp APOS         &kp NON_US_HASH  &kp N      &kp M   &kp COMMA   &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
-                                &kp LEFT_ALT  &mo 2   &kp LEFT_META  &kp BACKSPACE    &kp SPACE        &kp ENTER  &mo 3   &kp DELETE
+&kp ESCAPE      &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                       &kp N6     &kp N7  &kp N8      &kp N9   &kp N0    &kp MINUS
+&kp TAB         &kp Q   &kp W   &kp E         &kp R   &kp T                                        &kp Y      &kp U   &kp I       &kp O    &kp P     &kp LEFT_BRACE
+&kp LCTRL       &kp A   &kp S   &kp D         &kp F   &kp G                                        &kp H      &kp J   &kp K       &kp L    &kp SEMI  &kp RIGHT_BRACE
+&kp LEFT_SHIFT  &kp Z   &kp X   &kp C         &kp V   &kp B          &kp APOS     &kp NON_US_HASH  &kp N      &kp M   &kp COMMA   &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
+                                &kp LEFT_ALT  &mo 2   &kp LEFT_META  &kp SPACE    &kp SPACE        &kp ENTER  &mo 3   &kp DELETE
             >;
 
             label = "Mac";
