@@ -84,35 +84,37 @@
         };
 
         High {
-            /* HIGH (símbolos de programación) — se activa manteniendo la tecla HIGH
+            /* HIGH — se activa manteniendo la tecla HIGH
              * ,-----------------------------------------.                    ,-----------------------------------------.
-             * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
+             * |Emoji |      |      |      |      |      |                    | ºª\  |      |      |  '?  |  ¡¿  |      |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * |      |  `   |  @   |  #   |  $   |  %   |                    |  ?   |  {   |  }   |  !   |  \   |Emoji |
+             * |      |  `   |  @   |  #   |  $   |  %   |                    |      |      |      | `^[  | +*]  |      |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * |      |  ^   |  &   |  *   |  (   |  )   |-------.    ,-------|  ¿   |  [   |  ]   |  ¡   |  ;   |  '   |
+             * |      |  ^   |  &   |  *   |  (   |  )   |-------.    ,-------|      |      |      |      |  ç}  |      |
              * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
-             * |      |  ~   | PIPE |  :   |  "   |  _   |-------|    |-------|  +   |  <   |  >   |  =   |  /   |      |
+             * |      |  ~   | PIPE |  :   |  "   |  _   |-------|    |-------|      |      |      |      |  <>  |      |
              * `-----------------------------------------/       /     \      \-----------------------------------------'
              *                   |      |      |      | /       /       \      \  |      |      |      |
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
-             * Mano izquierda: fila QWERT = ` @ # $ %, fila ASDFG = ^ & * ( ),
-             * y abajo los símbolos "planos" sin Shift (~ | : " _).
-             * Mano derecha: la columna de U/J/M abre ({ [ <) y la de I/K/, cierra (} ] >).
-             * El signo invertido va debajo del derecho (? sobre ¿ y ! sobre ¡).
-             * Cada símbolo se genera con su combo nativo de "Española — ISO"
-             * (Option+´ = {, Shift+7 = /, etc.), así que macOS debe estar en esa distribución.
-             * Emoji abre el selector de emojis de macOS (Ctrl+Cmd+Espacio).
+             * Mano derecha: las 7 teclas del teclado español que el Lily58 no tiene,
+             * plegadas en su misma fila (keycode crudo, así que cada una se comporta
+             * igual que la tecla real: normal / Shift / Option):
+             *   9='?   0=¡¿   O=`^[   P=+*]   Ñ=ç}   guión=<>   6=ºª\
+             *   ej: [ = HIGH+Option+O · ] = HIGH+Option+P · } = HIGH+Option+Ñ · \ = HIGH+Option+6
+             *   ` y ^ ahí son teclas muertas, como en el teclado real.
+             * La columna exterior queda transparente: ⌫, Enter, ´ y Shift siguen disponibles con HIGH.
+             * Mano izquierda: atajos de una sola pulsación para programar (sin Shift/Option).
+             * Emoji (HIGH+Esc) abre el selector de emojis de macOS (Ctrl+Cmd+Espacio).
              */
 
             bindings = <
-&trans  &trans        &trans      &trans       &trans      &trans                          &trans         &trans        &trans                    &trans      &trans         &trans
-&trans  &es_grave     &kp LA(N2)  &kp LA(N3)   &kp DLLR    &kp PRCNT                       &kp LS(MINUS)  &kp LA(SQT)   &kp LA(BSLH)              &kp EXCL    &kp LA(GRAVE)  &kp LC(LG(SPACE))
-&trans  &es_caret     &kp LS(N6)  &kp LS(RBKT) &kp LS(N8)  &kp LS(N9)                      &kp LS(EQUAL)  &kp LA(LBKT)  &kp LA(RBKT)              &kp EQUAL   &kp LS(COMMA)  &kp MINUS
-&trans  &kp LA(SEMI)  &kp LA(N1)  &kp LS(DOT)  &kp LS(N2)  &kp LS(FSLH)  &trans    &trans  &kp RBKT       &kp NON_US_BACKSLASH  &kp LS(NON_US_BACKSLASH)  &kp LS(N0)  &kp LS(N7)  &trans
-                                  &trans       &trans      &trans        &trans    &trans  &trans         &trans        &trans
+&kp LC(LG(SPACE))  &trans        &trans      &trans       &trans      &trans                          &kp GRAVE  &trans  &trans  &kp MINUS  &kp EQUAL  &trans
+&trans             &es_grave     &kp LA(N2)  &kp LA(N3)   &kp DLLR    &kp PRCNT                       &trans     &trans  &trans  &kp LBKT   &kp RBKT   &trans
+&trans             &es_caret     &kp LS(N6)  &kp LS(RBKT) &kp LS(N8)  &kp LS(N9)                      &trans     &trans  &trans  &trans     &kp BSLH   &trans
+&trans             &kp LA(SEMI)  &kp LA(N1)  &kp LS(DOT)  &kp LS(N2)  &kp LS(FSLH)  &trans    &trans  &trans     &trans  &trans  &trans     &kp NON_US_BACKSLASH  &trans
+                                             &trans       &trans      &trans        &trans    &trans  &trans     &trans  &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
