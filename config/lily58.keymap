@@ -12,10 +12,12 @@
 / {
     behaviors {
         // Tecla ñ: escribe ñ directo, y Ñ con Shift.
+
         es_n: es_n {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
             bindings = <&n_tilde>, <&n_tilde_up>;
+
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
@@ -23,19 +25,23 @@
         // se presiona y la siguiente vocal sale acentuada (á é í ó ú).
         // Con Shift es la diéresis muerta (¨) para escribir ü.
         // Requiere macOS con distribución "U.S." o "ABC" (Option+E / Option+U).
+
         es_acute: es_acute {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
             bindings = <&kp LA(E)>, <&kp LA(U)>;
+
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
         // Coma y punto al estilo del layout de España:
         // "," con Shift da ";" y "." con Shift da ":".
+
         es_comma: es_comma {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
             bindings = <&kp COMMA>, <&kp SEMI>;
+
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
@@ -43,6 +49,7 @@
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
             bindings = <&kp DOT>, <&kp COLON>;
+
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
     };
@@ -64,6 +71,7 @@
 
         // ñ para macOS con distribución "U.S."/"ABC":
         // Option+N activa la virgulilla muerta y luego se escribe la n.
+
         n_tilde: n_tilde {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
@@ -108,11 +116,11 @@
             //                     |      |      |      |        |  |       |      |       |       |
 
             bindings = <
-&bt BT_CLR    &kp F1            &kp F2             &kp F3             &kp F4  &kp F5                    &kp F6        &kp F7  &kp F8  &kp F9  &kp F10   &kp F11
-&windows      &kp GRAVE         &trans             &trans             &trans  &trans                    &kp QUESTION  &trans  &trans  &trans  &trans    &kp F12
-&mac          &trans            &trans             &trans             &trans  &trans                    &trans        &trans  &trans  &trans  &kp SEMI  &kp SQT
-&bt BT_SEL 2  &ext_power EP_ON  &ext_power EP_OFF  &ext_power EP_TOG  &trans  &trans  &trans    &trans  &trans        &trans  &trans  &trans  &kp FSLH  &studio_unlock
-                                                   &trans             &trans  &trans  &trans    &trans  &trans        &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &trans        &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &kp QUESTION  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &trans        &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans        &trans  &trans  &trans  &trans  &trans
+                        &trans  &trans  &trans  &trans    &trans  &trans        &trans  &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
@@ -128,11 +136,11 @@
             //                     |      |      |      |        |  |       |      |       |       |
 
             bindings = <
-&trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5                    &kp F6          &kp F7             &kp F8            &kp F9           &kp F10          &kp F11
-&trans  &trans  &trans  &trans  &trans  &trans                    &kp C_PREVIOUS  &kp C_VOLUME_DOWN  &kp C_PLAY_PAUSE  &kp C_VOLUME_UP  &kp C_NEXT       &kp F12
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans          &kp LEFT_ARROW     &kp UP_ARROW      &kp DOWN_ARROW   &kp RIGHT_ARROW  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &kp KP_PLUS     &trans             &trans            &trans           &trans           &studio_unlock
-                        &trans  &trans  &trans  &trans    &trans  &trans          &trans             &trans
+&trans             &kp F1        &kp F2        &kp F3  &kp F4  &kp F5                        &kp F6          &kp F7             &kp F8            &kp F9           &kp F10          &kp F11
+&bt BT_SEL 0       &bt BT_SEL 1  &bt BT_SEL 2  &trans  &trans  &bt BT_CLR                    &kp C_PREVIOUS  &kp C_VOLUME_DOWN  &kp C_PLAY_PAUSE  &kp C_VOLUME_UP  &kp C_NEXT       &kp F12
+&trans             &trans        &trans        &trans  &trans  &trans                        &trans          &kp LEFT_ARROW     &kp UP_ARROW      &kp DOWN_ARROW   &kp RIGHT_ARROW  &trans
+&ext_power EP_TOG  &trans        &trans        &trans  &trans  &trans      &trans    &trans  &kp KP_PLUS     &trans             &trans            &trans           &trans           &studio_unlock
+                                               &trans  &trans  &trans      &trans    &trans  &trans          &trans             &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
