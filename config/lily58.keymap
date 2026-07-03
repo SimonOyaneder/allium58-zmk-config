@@ -124,17 +124,19 @@
              * ,-----------------------------------------.                    ,-----------------------------------------.
              * |      |      |      |      |      |      |                    |      |      |      |      |      |      |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * |      |      |      |      |      |      |                    |  ?   |  {   |  }   |  !   |  \   |Emoji |
+             * |      |  !   |  @   |  #   |  $   |  %   |                    |  ?   |  {   |  }   |  !   |  \   |Emoji |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * |      |      |      |      |      |      |-------.    ,-------|  ¿   |  [   |  ]   |  ¡   |  ;   |  '   |
+             * |      |  ^   |  &   |  *   |  (   |  )   |-------.    ,-------|  ¿   |  [   |  ]   |  ¡   |  ;   |  '   |
              * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
-             * |      |      |      |      |      |      |-------|    |-------|  `   |  <   |  >   |  =   |  /   |      |
+             * |      |  ~   | PIPE |  :   |  "   |  _   |-------|    |-------|  `   |  <   |  >   |  =   |  /   |      |
              * `-----------------------------------------/       /     \      \-----------------------------------------'
              *                   |      |      |      | /       /       \      \  |      |      |      |
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
-             * Lógica: la columna de U/J/M abre ({ [ <) y la de I/K/, cierra (} ] >).
+             * Mano izquierda: los símbolos de los números en orden (fila QWERT = 1-5, fila ASDFG = 6-0),
+             * y abajo los símbolos "planos" sin Shift (~ | : " _).
+             * Mano derecha: la columna de U/J/M abre ({ [ <) y la de I/K/, cierra (} ] >).
              * El signo invertido va debajo del derecho (? sobre ¿ y ! sobre ¡).
              * Con Shift salen los pares de US: \ da | · ; da : · ' da " · ` da ~ · = da + · / da ?
              * ¿ y ¡ usan combos de Option (solo macOS con layout U.S.). Encoder: volumen.
@@ -142,11 +144,11 @@
              */
 
             bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans            &trans    &trans    &trans      &trans    &trans
-&trans  &trans  &trans  &trans  &trans  &trans                    &kp QUESTION      &kp LBRC  &kp RBRC  &kp EXCL    &kp BSLH  &kp LC(LG(SPACE))
-&trans  &trans  &trans  &trans  &trans  &trans                    &kp LA(LS(FSLH))  &kp LBKT  &kp RBKT  &kp LA(N1)  &kp SEMI  &kp SQT
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &kp GRAVE         &kp LT    &kp GT    &kp EQUAL   &kp FSLH  &trans
-                        &trans  &trans  &trans  &trans    &trans  &trans            &trans    &trans
+&trans  &trans     &trans    &trans     &trans    &trans                       &trans            &trans    &trans    &trans      &trans    &trans
+&trans  &kp EXCL   &kp AT    &kp HASH   &kp DLLR  &kp PRCNT                    &kp QUESTION      &kp LBRC  &kp RBRC  &kp EXCL    &kp BSLH  &kp LC(LG(SPACE))
+&trans  &kp CARET  &kp AMPS  &kp ASTRK  &kp LPAR  &kp RPAR                     &kp LA(LS(FSLH))  &kp LBKT  &kp RBKT  &kp LA(N1)  &kp SEMI  &kp SQT
+&trans  &kp TILDE  &kp PIPE  &kp COLON  &kp DQT   &kp UNDER  &trans    &trans  &kp GRAVE         &kp LT    &kp GT    &kp EQUAL   &kp FSLH  &trans
+                             &trans     &trans    &trans     &trans    &trans  &trans            &trans    &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
