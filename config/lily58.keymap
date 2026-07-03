@@ -29,6 +29,22 @@
             bindings = <&kp LA(E)>, <&kp LA(U)>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
+
+        // Coma y punto al estilo del layout de España:
+        // "," con Shift da ";" y "." con Shift da ":".
+        es_comma: es_comma {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp COMMA>, <&kp SEMI>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        es_dot: es_dot {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp DOT>, <&kp COLON>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
     };
 
     macros {
@@ -69,14 +85,14 @@
             // |  ESC  |  1  |  2  |  3   |  4   |  5   |                   |  6   |  7    |  8    |  9   |   0   |   `   |
             // |  TAB  |  Q  |  W  |  E   |  R   |  T   |                   |  Y   |  U    |  I    |  O   |   P   |   -   |
             // |  CTRL |  A  |  S  |  D   |  F   |  G   |                   |  H   |  J    |  K    |  L   |   Ñ   |  ´ ¨  |
-            // | SHIFT |  Z  |  X  |  C   |  V   |  B   |   "["  |  |  "]"  |  N   |  M    |  ,    |  .   |   /   | SHIFT |
+            // | SHIFT |  Z  |  X  |  C   |  V   |  B   |   "["  |  |  "]"  |  N   |  M    |  , ;  |  . : |  - _  | SHIFT |
             //                     | ALT  | GUI  | LOWER|  SPACE |  | ENTER | RAISE| BSPC  | GUI   |
 
             bindings = <
-&kp ESCAPE      &kp N1  &kp N2  &kp N3            &kp N4        &kp N5                                 &kp N6             &kp N7         &kp N8      &kp N9   &kp N0    &kp BACKSPACE
-&kp TAB         &kp Q   &kp W   &kp E             &kp R         &kp T                                  &kp Y              &kp U          &kp I       &kp O    &kp P     &kp ENTER
-&kp CAPSLOCK    &kp A   &kp S   &kp D             &kp F         &kp G                                  &kp H              &kp J          &kp K       &kp L    &es_n     &es_acute
-&kp LEFT_SHIFT  &kp Z   &kp X   &kp C             &kp V         &kp B          &mo 1        &mo 2      &kp N              &kp M          &kp COMMA   &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
+&kp ESCAPE      &kp N1  &kp N2  &kp N3            &kp N4        &kp N5                                 &kp N6             &kp N7         &kp N8      &kp N9   &kp N0     &kp BACKSPACE
+&kp TAB         &kp Q   &kp W   &kp E             &kp R         &kp T                                  &kp Y              &kp U          &kp I       &kp O    &kp P      &kp ENTER
+&kp CAPSLOCK    &kp A   &kp S   &kp D             &kp F         &kp G                                  &kp H              &kp J          &kp K       &kp L    &es_n      &es_acute
+&kp LEFT_SHIFT  &kp Z   &kp X   &kp C             &kp V         &kp B          &mo 1        &mo 2      &kp N              &kp M          &es_comma   &es_dot  &kp MINUS  &kp RIGHT_SHIFT
                                 &kp LEFT_CONTROL  &kp LEFT_ALT  &kp LEFT_META  &kp SPACE    &kp SPACE  &kp RIGHT_COMMAND  &kp RIGHT_ALT  &kp DELETE
             >;
 
@@ -88,14 +104,14 @@
             // | BTCLR |  F1 |  F2 |  F3  |  F4  |  F5  |                   |  F6  |  F7   |  F8   |  F9  |  F10  |  F11  |
             // |  WIN  |  `  |     |      |      |      |                   |  ?   |       |       |      |       |  F12  |
             // |  MAC  |     |     |      |      |      |                   |      |       |       |      |   ;   |   '   |
-            // |  BT2  | EP+ | EP- | EPTG |      |      |        |  |       |      |       |       |      |       | UNLCK |
+            // |  BT2  | EP+ | EP- | EPTG |      |      |        |  |       |      |       |       |      |  / ?  | UNLCK |
             //                     |      |      |      |        |  |       |      |       |       |
 
             bindings = <
 &bt BT_CLR    &kp F1            &kp F2             &kp F3             &kp F4  &kp F5                    &kp F6        &kp F7  &kp F8  &kp F9  &kp F10   &kp F11
 &windows      &kp GRAVE         &trans             &trans             &trans  &trans                    &kp QUESTION  &trans  &trans  &trans  &trans    &kp F12
 &mac          &trans            &trans             &trans             &trans  &trans                    &trans        &trans  &trans  &trans  &kp SEMI  &kp SQT
-&bt BT_SEL 2  &ext_power EP_ON  &ext_power EP_OFF  &ext_power EP_TOG  &trans  &trans  &trans    &trans  &trans        &trans  &trans  &trans  &trans    &studio_unlock
+&bt BT_SEL 2  &ext_power EP_ON  &ext_power EP_OFF  &ext_power EP_TOG  &trans  &trans  &trans    &trans  &trans        &trans  &trans  &trans  &kp FSLH  &studio_unlock
                                                    &trans             &trans  &trans  &trans    &trans  &trans        &trans  &trans
             >;
 
