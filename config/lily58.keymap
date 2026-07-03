@@ -9,51 +9,14 @@
 #include <dt-bindings/zmk/ext_power.h>
 #include <dt-bindings/zmk/keys.h>
 
+/*
+ * Todo el keymap asume macOS con la distribución "Española — ISO".
+ * Ñ, ´¨, coma/punto/guión con sus Shift y ¡¿ son nativos de esa distribución;
+ * los símbolos de programación del layer HIGH se generan con los combos
+ * Shift/Option propios del teclado español de Mac.
+ */
+
 / {
-    behaviors {
-        // Tecla ñ: escribe ñ directo, y Ñ con Shift.
-
-        es_n: es_n {
-            compatible = "zmk,behavior-mod-morph";
-            #binding-cells = <0>;
-            bindings = <&n_tilde>, <&n_tilde_up>;
-
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-        };
-
-        // Tecla muerta de acento, igual que en el layout de España:
-        // se presiona y la siguiente vocal sale acentuada (á é í ó ú).
-        // Con Shift es la diéresis muerta (¨) para escribir ü.
-        // Requiere macOS con distribución "U.S." o "ABC" (Option+E / Option+U).
-
-        es_acute: es_acute {
-            compatible = "zmk,behavior-mod-morph";
-            #binding-cells = <0>;
-            bindings = <&kp LA(E)>, <&kp LA(U)>;
-
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-        };
-
-        // Coma y punto al estilo del layout de España:
-        // "," con Shift da ";" y "." con Shift da ":".
-
-        es_comma: es_comma {
-            compatible = "zmk,behavior-mod-morph";
-            #binding-cells = <0>;
-            bindings = <&kp COMMA>, <&kp SEMI>;
-
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-        };
-
-        es_dot: es_dot {
-            compatible = "zmk,behavior-mod-morph";
-            #binding-cells = <0>;
-            bindings = <&kp DOT>, <&kp COLON>;
-
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-        };
-    };
-
     macros {
         windows: Windows {
             compatible = "zmk,behavior-macro";
@@ -69,19 +32,19 @@
             label = "MAC";
         };
 
-        // ñ para macOS con distribución "U.S."/"ABC":
-        // Option+N activa la virgulilla muerta y luego se escribe la n.
+        // En ES-ISO ` y ^ son teclas muertas: se componen con espacio
+        // para obtener el carácter suelto.
 
-        n_tilde: n_tilde {
+        es_grave: es_grave {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&kp LA(N) &kp N>;
+            bindings = <&kp LBKT &kp SPACE>;
         };
 
-        n_tilde_up: n_tilde_up {
+        es_caret: es_caret {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&kp LA(N) &kp LS(N)>;
+            bindings = <&kp LS(LBKT) &kp SPACE>;
         };
     };
 
@@ -103,16 +66,17 @@
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
-             * Comportamiento estilo teclado español (con macOS en layout "U.S."/"ABC"):
+             * Con macOS en "Española — ISO" todo esto es nativo:
              *   Ñ escribe ñ/Ñ  ·  ´¨ es tecla muerta de acento (Shift: diéresis)
-             *   , . - con Shift dan ; : _ como en el layout de España
+             *   , . - con Shift dan ; : _
+             *   Shift+números da los símbolos españoles (! " · $ % & / ( ) =)
              */
 
             bindings = <
-&kp ESCAPE        &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                 &kp N6             &kp N7  &kp N8         &kp N9   &kp N0     &kp BACKSPACE
-&kp TAB           &kp Q   &kp W   &kp E         &kp R   &kp T                                  &kp Y              &kp U   &kp I          &kp O    &kp P      &kp ENTER
-&kp LEFT_CONTROL  &kp A   &kp S   &kp D         &kp F   &kp G                                  &kp H              &kp J   &kp K          &kp L    &es_n      &es_acute
-&kp LEFT_SHIFT    &kp Z   &kp X   &kp C         &kp V   &kp B          &trans       &trans     &kp N              &kp M   &es_comma      &es_dot  &kp MINUS  &kp RIGHT_SHIFT
+&kp ESCAPE        &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                 &kp N6             &kp N7  &kp N8         &kp N9   &kp N0    &kp BACKSPACE
+&kp TAB           &kp Q   &kp W   &kp E         &kp R   &kp T                                  &kp Y              &kp U   &kp I          &kp O    &kp P     &kp ENTER
+&kp LEFT_CONTROL  &kp A   &kp S   &kp D         &kp F   &kp G                                  &kp H              &kp J   &kp K          &kp L    &kp SEMI  &kp SQT
+&kp LEFT_SHIFT    &kp Z   &kp X   &kp C         &kp V   &kp B          &trans       &trans     &kp N              &kp M   &kp COMMA      &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
                                   &kp LEFT_ALT  &mo 1   &kp LEFT_META  &kp SPACE    &kp SPACE  &kp RIGHT_COMMAND  &mo 2   &kp RIGHT_ALT
             >;
 
@@ -134,21 +98,21 @@
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
-             * Mano izquierda: fila QWERT = ` @ # $ %, fila ASDFG = los símbolos de 6-0 en orden (^ & * ( )),
+             * Mano izquierda: fila QWERT = ` @ # $ %, fila ASDFG = ^ & * ( ),
              * y abajo los símbolos "planos" sin Shift (~ | : " _).
              * Mano derecha: la columna de U/J/M abre ({ [ <) y la de I/K/, cierra (} ] >).
              * El signo invertido va debajo del derecho (? sobre ¿ y ! sobre ¡).
-             * Con Shift salen los pares de US: \ da | · ; da : · ' da " · ` da ~ · = da + · / da ?
-             * ¿ y ¡ usan combos de Option (solo macOS con layout U.S.). Encoder: volumen.
+             * Cada símbolo se genera con su combo nativo de "Española — ISO"
+             * (Option+´ = {, Shift+7 = /, etc.), así que macOS debe estar en esa distribución.
              * Emoji abre el selector de emojis de macOS (Ctrl+Cmd+Espacio).
              */
 
             bindings = <
-&trans  &trans     &trans    &trans     &trans    &trans                       &trans            &trans    &trans    &trans      &trans    &trans
-&trans  &kp GRAVE  &kp AT    &kp HASH   &kp DLLR  &kp PRCNT                    &kp QUESTION      &kp LBRC  &kp RBRC  &kp EXCL    &kp BSLH  &kp LC(LG(SPACE))
-&trans  &kp CARET  &kp AMPS  &kp ASTRK  &kp LPAR  &kp RPAR                     &kp LA(LS(FSLH))  &kp LBKT  &kp RBKT  &kp LA(N1)  &kp SEMI  &kp SQT
-&trans  &kp TILDE  &kp PIPE  &kp COLON  &kp DQT   &kp UNDER  &trans    &trans  &kp PLUS          &kp LT    &kp GT    &kp EQUAL   &kp FSLH  &trans
-                             &trans     &trans    &trans     &trans    &trans  &trans            &trans    &trans
+&trans  &trans        &trans      &trans       &trans      &trans                          &trans         &trans        &trans                    &trans      &trans         &trans
+&trans  &es_grave     &kp LA(N2)  &kp LA(N3)   &kp DLLR    &kp PRCNT                       &kp LS(MINUS)  &kp LA(SQT)   &kp LA(BSLH)              &kp EXCL    &kp LA(GRAVE)  &kp LC(LG(SPACE))
+&trans  &es_caret     &kp LS(N6)  &kp LS(RBKT) &kp LS(N8)  &kp LS(N9)                      &kp LS(EQUAL)  &kp LA(LBKT)  &kp LA(RBKT)              &kp EQUAL   &kp LS(COMMA)  &kp MINUS
+&trans  &kp LA(SEMI)  &kp LA(N1)  &kp LS(DOT)  &kp LS(N2)  &kp LS(FSLH)  &trans    &trans  &kp RBKT       &kp NON_US_BACKSLASH  &kp LS(NON_US_BACKSLASH)  &kp LS(N0)  &kp LS(N7)  &trans
+                                  &trans       &trans      &trans        &trans    &trans  &trans         &trans        &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
