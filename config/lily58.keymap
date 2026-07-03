@@ -109,18 +109,19 @@
 
         High {
             // ------------------------------------------------------------------------------------------------------------
-            // | BTCLR |  F1 |  F2 |  F3  |  F4  |  F5  |                   |  F6  |  F7   |  F8   |  F9  |  F10  |  F11  |
-            // |  WIN  |  `  |     |      |      |      |                   |  ?   |       |       |      |       |  F12  |
-            // |  MAC  |     |     |      |      |      |                   |      |       |       |      |   ;   |   '   |
-            // |  BT2  | EP+ | EP- | EPTG |      |      |        |  |       |      |       |       |      |  / ?  | UNLCK |
+            // ------------------------------------------------------------------------------------------------------------
+            // |       |     |     |      |      |      |                   |      |       |       |      |       |       |
+            // |       |     |     |      |      |      |                   |  ?   |   {   |   }   |  !   |  \ |  |       |
+            // |       |     |     |      |      |      |                   |  ¿   |   [   |   ]   |  ¡   |  ; :  |  ' "  |
+            // |       |     |     |      |      |      |        |  |       | ` ~  |   <   |   >   |  = + |  / ?  |       |
             //                     |      |      |      |        |  |       |      |       |       |
 
             bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans        &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                    &kp QUESTION  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans        &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans        &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans  &trans    &trans  &trans        &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &trans            &trans    &trans    &trans      &trans    &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &kp QUESTION      &kp LBRC  &kp RBRC  &kp EXCL    &kp BSLH  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &kp LA(LS(FSLH))  &kp LBKT  &kp RBKT  &kp LA(N1)  &kp SEMI  &kp SQT
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &kp GRAVE         &kp LT    &kp GT    &kp EQUAL   &kp FSLH  &trans
+                        &trans  &trans  &trans  &trans    &trans  &trans            &trans    &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
