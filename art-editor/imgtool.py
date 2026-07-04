@@ -80,15 +80,17 @@ def pack_bytes(px):
     return out
 
 
-def export_c(px, sym, fixed_palette=False):
+def export_c(px, sym, fixed_palette=True):
     """Genera un .c estilo LVGL9 (como los assets del shield).
 
-    Con fixed_palette=True la paleta queda fija (index 0 blanco / index 1 negro)
-    en vez de seguir CONFIG_NICE_VIEW_WIDGET_INVERTED: útil para arte nocturno
-    que no debe invertirse junto con los widgets.
+    OJO (validado en hardware, zmk main + LVGL 9): el render de imágenes I1
+    ignora la paleta incrustada y usa los bits crudos con la convención de
+    zmk stock: bit 0 = NEGRO, bit 1 = BLANCO. Por eso aquí se empaqueta
+    invertido respecto al diseño (1 = tinta negra -> bit 0) y la paleta se
+    escribe fija en esa misma convención (solo documental).
     """
     h, w = len(px), len(px[0])
-    data = pack_bytes(px)
+    data = pack_bytes([[1 - v for v in row] for row in px])
     stride = (w + 7) // 8
     lines = []
     up = sym.upper()
@@ -96,17 +98,8 @@ def export_c(px, sym, fixed_palette=False):
     lines.append("#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n")
     lines.append(f"#ifndef LV_ATTRIBUTE_IMG_{up}\n#define LV_ATTRIBUTE_IMG_{up}\n#endif\n")
     lines.append(f"const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_{up} uint8_t {sym}_map[] = {{")
-    if fixed_palette:
-        lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/")
-        lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n")
-    else:
-        lines.append("#if CONFIG_NICE_VIEW_WIDGET_INVERTED")
-        lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/")
-        lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/")
-        lines.append("#else")
-        lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/")
-        lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/")
-        lines.append("#endif\n")
+    lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/")
+    lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/\n")
     for y in range(h):
         row = data[y * stride:(y + 1) * stride]
         lines.append("    " + ", ".join(f"0x{v:02x}" for v in row) + ",")
@@ -122,7 +115,8 @@ def export_c(px, sym, fixed_palette=False):
 
 
 if __name__ == "__main__":
-    # uso: imgtool.py decode <in.c> <out.png> [w h] [cw|ccw] [scale]
+    # uso: imgtool.py decode <in.c> <out.png> [w h] [cw|ccw] [inv] [scale]
+    # `inv`: para assets con la convención de zmk main/LVGL9 (bit 0 = negro)
     if sys.argv[1] == "decode":
         path, out = sys.argv[2], sys.argv[3]
         data, w, h = parse_c_bytes(path)
@@ -141,6 +135,8 @@ if __name__ == "__main__":
         stride = (w + 7) // 8
         print(f"bytes={len(data)} w={w} h={h} esperado={stride * h}")
         px = unpack_bitmap(data, w, h)
+        if "inv" in args:
+            px = [[1 - v for v in row] for row in px]
         if rot == "cw":
             px = rot_cw(px)
         elif rot == "ccw":
