@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nice!view art editor — Allium58</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1c1f26;
+    --panel-2: #23272f;
+    --border: #2f343d;
+    --text: #e6e8ec;
+    --muted: #9aa1ac;
+    --accent: #6ea8fe;
+    --accent-2: #2d6cdf;
+    --ink: #000;
+    --paper: #fff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .col.canvas-col { flex: 1 1 520px; min-width: 340px; }
+  .col.side { flex: 0 0 320px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+  label.field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  input[type="number"], input[type="text"], select {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 100%;
+  }
+  input[type="number"] { width: 78px; }
+  button {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 7px 11px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { border-color: var(--accent); }
+  button.active { background: var(--accent-2); border-color: var(--accent); color: #fff; }
+  button.primary { background: var(--accent-2); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.tool { min-width: 40px; }
+  .tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .stage {
+    background: #0c0d10; border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    overflow: auto; display: flex; justify-content: center;
+  }
+  #editor { image-rendering: pixelated; cursor: crosshair; touch-action: none; display: block; }
+  .orient-wrap {
+    display: grid; gap: 6px; align-items: center; justify-items: center;
+    grid-template-columns: 22px 1fr 22px;
+    grid-template-areas: ". top ." "left stage right" ". bottom .";
+  }
+  .orient { color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+  .orient.top { grid-area: top; } .orient.bottom { grid-area: bottom; }
+  .orient.left { grid-area: left; writing-mode: vertical-rl; transform: rotate(180deg); }
+  .orient.right { grid-area: right; writing-mode: vertical-rl; }
+  .orient-wrap .stage { grid-area: stage; }
+  .orient.top small, .orient.bottom small { color: var(--muted); font-weight: 400; }
+  .previews { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  .preview-box { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .preview-box canvas { image-rendering: pixelated; border: 1px solid var(--border); background: #000; }
+  .preview-box span { font-size: 11px; color: var(--muted); }
+  textarea {
+    width: 100%; min-height: 120px; background: #0c0d10; color: #cfe3ff; border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
+  }
+  .hint { font-size: 11px; color: var(--muted); }
+  .stat { font-variant-numeric: tabular-nums; }
+  .drop { border: 1px dashed var(--border); border-radius: 8px; padding: 14px; text-align: center; color: var(--muted); font-size: 12px; }
+  .drop.over { border-color: var(--accent); color: var(--accent); background: rgba(110,168,254,.06); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  input[type="range"] { width: 140px; }
+  .kbd { font: 11px ui-monospace, monospace; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>nice!view art editor</h1>
+  <span class="sub">Pixel art 1-bit → C array LVGL (formato <code>I1</code>) listo para nice-view-gem</span>
+</header>
+
+<div class="layout">
+  <!-- ============ COLUMNA IZQUIERDA: LIENZO ============ -->
+  <div class="col canvas-col">
+    <div class="card">
+      <h2>Herramientas</h2>
+      <div class="row">
+        <div class="tools" style="flex:1 1 auto">
+          <button class="tool active" data-tool="pencil" title="Lápiz (B)">✏️</button>
+          <button class="tool" data-tool="eraser" title="Goma (E)">🧽</button>
+          <button class="tool" data-tool="line" title="Línea (L)">╱</button>
+          <button class="tool" data-tool="rect" title="Rectángulo (R)">▭</button>
+          <button class="tool" data-tool="rectfill" title="Rectángulo relleno">▬</button>
+          <button class="tool" data-tool="ellipse" title="Elipse (O)">◯</button>
+          <button class="tool" data-tool="ellipsefill" title="Elipse rellena">●</button>
+          <button class="tool" data-tool="bucket" title="Balde (G)">🪣</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="field" style="flex-direction:row;align-items:center;gap:6px">
+          Pincel
+          <input type="range" id="brush" min="1" max="6" value="1">
+          <span id="brushVal" class="stat">1px</span>
+        </label>
+      </div>
+      <div class="row">
+        <button id="undo" title="Deshacer (Ctrl+Z)">↶ Deshacer</button>
+        <button id="redo" title="Rehacer (Ctrl+Shift+Z)">↷ Rehacer</button>
+        <button id="clear">Limpiar</button>
+        <button id="invert">Invertir</button>
+        <button id="flipH">Espejo H</button>
+        <button id="flipV">Espejo V</button>
+      </div>
+      <div class="row">
+        <span class="hint">Mover todo:</span>
+        <button data-shift="up">↑</button>
+        <button data-shift="down">↓</button>
+        <button data-shift="left">←</button>
+        <button data-shift="right">→</button>
+        <label class="field" style="flex-direction:row;align-items:center;gap:6px">
+          Zoom
+          <input type="range" id="zoom" min="1" max="16" value="6">
+          <span id="zoomVal" class="stat">6×</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+          <input type="checkbox" id="grid" checked> grilla
+        </label>
+      </div>
+    </div>
+
+    <div class="orient-wrap">
+      <div class="orient top">▲ ARRIBA <small>(batería / BT)</small></div>
+      <div class="orient left">IZQUIERDA</div>
+      <div class="stage">
+        <canvas id="editor"></canvas>
+      </div>
+      <div class="orient right">DERECHA</div>
+      <div class="orient bottom">▼ ABAJO</div>
+    </div>
+
+    <div class="card">
+      <h2>Previsualización a tamaño real (así se ve en la pantalla)</h2>
+      <div class="previews">
+        <div class="preview-box">
+          <span class="orient" style="font-size:10px">▲ arriba</span>
+          <canvas id="prevNormal"></canvas>
+          <span>normal</span>
+        </div>
+        <div class="preview-box">
+          <span class="orient" style="font-size:10px">▲ arriba</span>
+          <canvas id="prevInv"></canvas>
+          <span>invertida</span>
+        </div>
+        <div style="flex:1 1 140px">
+          <div class="hint stat" id="info"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COLUMNA DERECHA: PANELES ============ -->
+  <div class="col side">
+    <div class="card">
+      <h2>Lienzo</h2>
+      <div class="row">
+        <label class="field">ancho <input type="number" id="w" value="68" min="1" max="255"></label>
+        <label class="field">alto <input type="number" id="h" value="160" min="1" max="255"></label>
+        <button id="resize" style="align-self:flex-end">Aplicar</button>
+      </div>
+      <div class="row">
+        <button data-preset="68x120">izquierda 68×120</button>
+        <button data-preset="68x144">derecha 68×144</button>
+        <button data-preset="68x160">completa 68×160</button>
+      </div>
+      <p class="hint">Diseñas en <b>vertical, como ves la pantalla</b> (68 de ancho). Con la franja compacta el arte mide <b>68×120</b> en la izquierda (16px de estado arriba + 24px de perfiles/capa abajo) y <b>68×144</b> en la derecha (16px arriba).</p>
+    </div>
+
+    <div class="card">
+      <h2>Importar imagen</h2>
+      <div class="drop" id="drop">Arrastra un PNG/JPG aquí o <label style="color:var(--accent);cursor:pointer">explora<input type="file" id="file" accept="image/*" hidden></label></div>
+      <div class="row">
+        <label class="field" style="flex:1">encaje
+          <select id="fit">
+            <option value="contain">contener (letterbox)</option>
+            <option value="cover">cubrir (recorta)</option>
+            <option value="stretch">estirar</option>
+          </select>
+        </label>
+        <label class="field" style="flex:1">tramado
+          <select id="dither">
+            <option value="none">umbral simple</option>
+            <option value="fs">Floyd–Steinberg</option>
+            <option value="bayer">Bayer 4×4</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="field" style="flex:1;flex-direction:row;align-items:center;gap:6px">
+          umbral <input type="range" id="threshold" min="0" max="255" value="128"><span id="thVal" class="stat">128</span>
+        </label>
+      </div>
+      <div class="row">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+          <input type="checkbox" id="invSrc"> invertir origen
+        </label>
+        <button id="applyImg" class="primary" disabled>Aplicar imagen</button>
+      </div>
+      <p class="hint">Se re-aplica en vivo al mover los controles.</p>
+    </div>
+
+    <div class="card">
+      <h2>Exportar a C</h2>
+      <div class="row">
+        <label class="field" style="flex:1">nombre del símbolo
+          <input type="text" id="symbol" value="my_art">
+        </label>
+      </div>
+      <p class="hint">Genera el archivo completo en <b>formato shield</b>: rotado 90° horario y con los bits invertidos (tinta = bit 0, paleta index 0 = blanco), tal como lo espera el pipeline de zmk main + LVGL 9. Pega el resultado tal cual en <code>boards/shields/nice_view_gem/assets/</code>.</p>
+      <div class="row">
+        <button id="gen" class="primary">Generar</button>
+        <button id="copy">Copiar</button>
+        <button id="download">Descargar .c</button>
+      </div>
+      <textarea id="out" spellcheck="false" placeholder="El C array aparece aquí…"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Importar C existente</h2>
+      <p class="hint">Pega el contenido <b>completo</b> de <code>assets/moon_nika.c</code> o <code>night_mountains.c</code>: detecta el formato shield (rotado + bits invertidos) por el descriptor y lo endereza para editar. Un array plano vertical también funciona (usa el ancho/alto del panel «Lienzo»).</p>
+      <textarea id="inC" spellcheck="false" placeholder="0xff,0xff,… o el bloque completo del .c"></textarea>
+      <div class="row">
+        <button id="loadC">Cargar bytes</button>
+        <span class="hint">Usa el ancho/alto del panel «Lienzo».</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(() => {
+  // ---------- estado ----------
+  let W = 68, H = 160;
+  let bmp = new Uint8Array(W * H);        // 0 = fondo, 1 = tinta
+  let tool = "pencil", brush = 1, zoom = 6, showGrid = true;
+  let drawing = false, drawVal = 1, startX = 0, startY = 0, lastImg = null;
+  const undoStack = [], redoStack = [], UNDO_MAX = 60;
+
+  const editor = document.getElementById("editor");
+  const ectx = editor.getContext("2d");
+  const $ = id => document.getElementById(id);
+
+  // ---------- utilidades bitmap ----------
+  const idx = (x, y) => y * W + x;
+  const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const rowBytes = () => Math.ceil(W / 8);
+  const dataSize = () => 8 + rowBytes() * H;
+
+  function snapshot() {
+    undoStack.push(bmp.slice());
+    if (undoStack.length > UNDO_MAX) undoStack.shift();
+    redoStack.length = 0;
+  }
+  function undo() { if (undoStack.length) { redoStack.push(bmp.slice()); bmp = undoStack.pop(); render(); } }
+  function redo() { if (redoStack.length) { undoStack.push(bmp.slice()); bmp = redoStack.pop(); render(); } }
+
+  // ---------- render ----------
+  function render(overlay) {
+    editor.width = W * zoom;
+    editor.height = H * zoom;
+    // fondo (papel)
+    ectx.fillStyle = "#fff";
+    ectx.fillRect(0, 0, editor.width, editor.height);
+    // tinta
+    ectx.fillStyle = "#000";
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++)
+        if (bmp[idx(x, y)]) ectx.fillRect(x * zoom, y * zoom, zoom, zoom);
+    // overlay temporal (preview de figura)
+    if (overlay) {
+      ectx.fillStyle = overlay.val ? "rgba(0,0,0,.55)" : "rgba(255,80,80,.55)";
+      for (const [x, y] of overlay.pts) if (inb(x, y)) ectx.fillRect(x * zoom, y * zoom, zoom, zoom);
+    }
+    // grilla
+    if (showGrid && zoom >= 4) {
+      ectx.strokeStyle = "rgba(120,140,170,.22)";
+      ectx.lineWidth = 1;
+      ectx.beginPath();
+      for (let x = 0; x <= W; x++) { ectx.moveTo(x * zoom + .5, 0); ectx.lineTo(x * zoom + .5, H * zoom); }
+      for (let y = 0; y <= H; y++) { ectx.moveTo(0, y * zoom + .5); ectx.lineTo(W * zoom, y * zoom + .5); }
+      ectx.stroke();
+    }
+    renderPreviews();
+    $("info").innerHTML =
+      `tamaño <b>${W}×${H}</b><br>bytes/fila ${rowBytes()}<br>data_size <b>${dataSize()}</b> bytes`;
+  }
+
+  function renderPreviews() {
+    for (const [cid, inv] of [["prevNormal", false], ["prevInv", true]]) {
+      const c = $(cid); c.width = W; c.height = H;
+      const cx = c.getContext("2d");
+      const img = cx.createImageData(W, H);
+      for (let i = 0; i < W * H; i++) {
+        let on = bmp[i] === 1;         // tinta
+        if (inv) on = !on;
+        const v = on ? 0 : 255;        // tinta negra sobre papel blanco
+        img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+      }
+      cx.putImageData(img, 0, 0);
+    }
+  }
+
+  // ---------- dibujo ----------
+  function stamp(x, y, val) {
+    const r = brush - 1;
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++)
+        if (inb(x + dx, y + dy)) bmp[idx(x + dx, y + dy)] = val;
+  }
+  function linePts(x0, y0, x1, y1) {
+    const pts = [];
+    let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx + dy;
+    for (;;) {
+      const r = brush - 1;
+      for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) pts.push([x0 + i, y0 + j]);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+    return pts;
+  }
+  function rectPts(x0, y0, x1, y1, fill) {
+    const pts = [], xa = Math.min(x0, x1), xb = Math.max(x0, x1), ya = Math.min(y0, y1), yb = Math.max(y0, y1);
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++)
+      if (fill || x === xa || x === xb || y === ya || y === yb) pts.push([x, y]);
+    return pts;
+  }
+  function ellipsePts(x0, y0, x1, y1, fill) {
+    const pts = [], cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const rx = Math.abs(x1 - x0) / 2, ry = Math.abs(y1 - y0) / 2;
+    if (rx < .5 || ry < .5) return pts;
+    const xa = Math.min(x0, x1), xb = Math.max(x0, x1), ya = Math.min(y0, y1), yb = Math.max(y0, y1);
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
+      const nx = (x + .5 - cx) / rx, ny = (y + .5 - cy) / ry, d = nx * nx + ny * ny;
+      if (fill ? d <= 1 : d <= 1 && d >= 0.55) pts.push([x, y]);
+    }
+    return pts;
+  }
+  function bucket(x, y, val) {
+    const target = bmp[idx(x, y)];
+    if (target === val) return;
+    const st = [[x, y]];
+    while (st.length) {
+      const [cx, cy] = st.pop();
+      if (!inb(cx, cy) || bmp[idx(cx, cy)] !== target) continue;
+      bmp[idx(cx, cy)] = val;
+      st.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+    }
+  }
+
+  function evtCell(e) {
+    const r = editor.getBoundingClientRect();
+    const px = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const py = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+    return [Math.floor(px / zoom), Math.floor(py / zoom)];
+  }
+
+  function pointerDown(e) {
+    e.preventDefault();
+    const [x, y] = evtCell(e);
+    if (!inb(x, y)) return;
+    snapshot();
+    drawing = true; startX = x; startY = y;
+    drawVal = tool === "eraser" ? 0 : 1;
+    if (tool === "pencil" || tool === "eraser") stamp(x, y, drawVal);
+    else if (tool === "bucket") { bucket(x, y, 1); drawing = false; }
+    render();
+  }
+  function pointerMove(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const [x, y] = evtCell(e);
+    if (tool === "pencil" || tool === "eraser") { stamp(x, y, drawVal); render(); return; }
+    let pts = [];
+    if (tool === "line") pts = linePts(startX, startY, x, y);
+    else if (tool === "rect") pts = rectPts(startX, startY, x, y, false);
+    else if (tool === "rectfill") pts = rectPts(startX, startY, x, y, true);
+    else if (tool === "ellipse") pts = ellipsePts(startX, startY, x, y, false);
+    else if (tool === "ellipsefill") pts = ellipsePts(startX, startY, x, y, true);
+    render({ pts, val: drawVal });
+  }
+  function pointerUp(e) {
+    if (!drawing) return;
+    drawing = false;
+    const [x, y] = evtCell(e);
+    let pts = null;
+    if (tool === "line") pts = linePts(startX, startY, x, y);
+    else if (tool === "rect") pts = rectPts(startX, startY, x, y, false);
+    else if (tool === "rectfill") pts = rectPts(startX, startY, x, y, true);
+    else if (tool === "ellipse") pts = ellipsePts(startX, startY, x, y, false);
+    else if (tool === "ellipsefill") pts = ellipsePts(startX, startY, x, y, true);
+    if (pts) { for (const [px, py] of pts) if (inb(px, py)) bmp[idx(px, py)] = drawVal; }
+    render();
+    save();
+  }
+  editor.addEventListener("mousedown", pointerDown);
+  window.addEventListener("mousemove", pointerMove);
+  window.addEventListener("mouseup", pointerUp);
+  editor.addEventListener("touchstart", pointerDown, { passive: false });
+  editor.addEventListener("touchmove", pointerMove, { passive: false });
+  editor.addEventListener("touchend", pointerUp);
+
+  // ---------- transformaciones ----------
+  function transform(fn) { snapshot(); fn(); render(); save(); }
+  $("clear").onclick = () => transform(() => bmp.fill(0));
+  $("invert").onclick = () => transform(() => { for (let i = 0; i < bmp.length; i++) bmp[i] ^= 1; });
+  $("flipH").onclick = () => transform(() => {
+    const n = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) n[idx(W - 1 - x, y)] = bmp[idx(x, y)];
+    bmp = n;
+  });
+  $("flipV").onclick = () => transform(() => {
+    const n = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) n[idx(x, H - 1 - y)] = bmp[idx(x, y)];
+    bmp = n;
+  });
+  document.querySelectorAll("[data-shift]").forEach(b => b.onclick = () => transform(() => {
+    const d = b.dataset.shift, n = new Uint8Array(W * H);
+    const ox = d === "left" ? -1 : d === "right" ? 1 : 0;
+    const oy = d === "up" ? -1 : d === "down" ? 1 : 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const sx = x - ox, sy = y - oy;
+      if (inb(sx, sy)) n[idx(x, y)] = bmp[idx(sx, sy)];
+    }
+    bmp = n;
+  }));
+
+  // ---------- herramientas / controles ----------
+  document.querySelectorAll(".tool").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".tool").forEach(t => t.classList.remove("active"));
+    b.classList.add("active"); tool = b.dataset.tool;
+  });
+  $("brush").oninput = e => { brush = +e.target.value; $("brushVal").textContent = brush + "px"; };
+  $("zoom").oninput = e => { zoom = +e.target.value; $("zoomVal").textContent = zoom + "×"; render(); };
+  $("grid").onchange = e => { showGrid = e.target.checked; render(); };
+  $("undo").onclick = undo; $("redo").onclick = redo;
+
+  window.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    const map = { b: "pencil", e: "eraser", l: "line", r: "rect", o: "ellipse", g: "bucket" };
+    if (map[e.key.toLowerCase()]) {
+      tool = map[e.key.toLowerCase()];
+      document.querySelectorAll(".tool").forEach(t => t.classList.toggle("active", t.dataset.tool === tool));
+    }
+  });
+
+  // ---------- redimensionar / presets ----------
+  function resizeCanvas(nw, nh) {
+    const n = new Uint8Array(nw * nh);
+    for (let y = 0; y < Math.min(nh, H); y++)
+      for (let x = 0; x < Math.min(nw, W); x++)
+        n[y * nw + x] = bmp[idx(x, y)];
+    W = nw; H = nh; bmp = n;
+    $("w").value = W; $("h").value = H;
+    undoStack.length = redoStack.length = 0;
+    render(); save();
+  }
+  $("resize").onclick = () => resizeCanvas(
+    Math.max(1, Math.min(255, +$("w").value | 0)),
+    Math.max(1, Math.min(255, +$("h").value | 0)));
+  document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
+    const [w, h] = b.dataset.preset.split("x").map(Number);
+    resizeCanvas(w, h);
+  });
+
+  // ---------- importar imagen ----------
+  const BAYER = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]].map(r => r.map(v => (v + .5) / 16 * 255));
+  function applyImage() {
+    if (!lastImg) return;
+    const fit = $("fit").value, mode = $("dither").value, th = +$("threshold").value, invSrc = $("invSrc").checked;
+    const off = document.createElement("canvas"); off.width = W; off.height = H;
+    const octx = off.getContext("2d");
+    octx.fillStyle = "#fff"; octx.fillRect(0, 0, W, H);
+    const iw = lastImg.width, ih = lastImg.height;
+    let dw = W, dh = H, dx = 0, dy = 0;
+    if (fit !== "stretch") {
+      const s = fit === "contain" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih);
+      dw = iw * s; dh = ih * s; dx = (W - dw) / 2; dy = (H - dh) / 2;
+    }
+    octx.imageSmoothingEnabled = true;
+    octx.drawImage(lastImg, dx, dy, dw, dh);
+    const data = octx.getImageData(0, 0, W, H).data;
+    const lum = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      let l = 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
+      if (invSrc) l = 255 - l;
+      lum[i] = l;
+    }
+    snapshot();
+    if (mode === "fs") {
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = idx(x, y), old = lum[i], nv = old < th ? 0 : 255;
+        bmp[i] = nv === 0 ? 1 : 0;
+        const err = old - nv;
+        if (inb(x+1, y)) lum[i+1] += err * 7/16;
+        if (inb(x-1, y+1)) lum[i-1+W] += err * 3/16;
+        if (inb(x, y+1)) lum[i+W] += err * 5/16;
+        if (inb(x+1, y+1)) lum[i+1+W] += err * 1/16;
+      }
+    } else if (mode === "bayer") {
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+        bmp[idx(x, y)] = lum[idx(x, y)] < BAYER[y & 3][x & 3] ? 1 : 0;
+    } else {
+      for (let i = 0; i < W * H; i++) bmp[i] = lum[i] < th ? 1 : 0;
+    }
+    render(); save();
+  }
+  function loadFile(f) {
+    if (!f) return;
+    const img = new Image();
+    img.onload = () => { lastImg = img; $("applyImg").disabled = false; applyImage(); };
+    img.src = URL.createObjectURL(f);
+  }
+  $("file").onchange = e => loadFile(e.target.files[0]);
+  $("applyImg").onclick = applyImage;
+  ["threshold", "dither", "fit", "invSrc"].forEach(id =>
+    $(id).addEventListener("input", () => { if (id === "threshold") $("thVal").textContent = $("threshold").value; if (lastImg) applyImage(); }));
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => loadFile(e.dataTransfer.files[0]));
+
+  // ---------- exportar C ----------
+  function packBytes() {
+    const rb = rowBytes(), out = [];
+    for (let y = 0; y < H; y++)
+      for (let b = 0; b < rb; b++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const x = b * 8 + bit;
+          if (x < W && bmp[idx(x, y)]) byte |= (1 << (7 - bit));
+        }
+        out.push(byte);
+      }
+    return out;
+  }
+  function hex(n) { return "0x" + n.toString(16).padStart(2, "0"); }
+  // Formato shield (zmk main + LVGL 9 + nice!view, validado en hardware):
+  // se almacena rotado 90° horario y la paleta SÍ se respeta, pero el
+  // pipeline invierte los colores LVGL al panel (blanco LVGL = pixel negro).
+  // Por eso la tinta del diseño va en bit 0 con paleta index 0 = blanco.
+  function generate() {
+    const sym = ($("symbol").value || "my_art").replace(/[^a-zA-Z0-9_]/g, "_");
+    const up = sym.toUpperCase();
+    const fbW = H, fbH = W;                       // framebuffer apaisado
+    const rb = Math.ceil(fbW / 8);
+    const bytes = [];
+    for (let fy = 0; fy < fbH; fy++)
+      for (let b = 0; b < rb; b++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const fx = b * 8 + bit;
+          if (fx >= fbW) continue;
+          const v = bmp[idx(fy, H - 1 - fx)];     // diseño -> fb (rot. horaria)
+          if (!v) byte |= (1 << (7 - bit));       // tinta = bit 0
+        }
+        bytes.push(byte);
+      }
+    let s = "";
+    s += `// Generado con art-editor/index.html (formato shield nice_view_gem).\n`;
+    s += `// Diseño ${W}x${H} vertical físico; almacenado rotado 90 grados horario (${fbW}x${fbH}).\n`;
+    s += `// zmk main + LVGL 9: el pipeline invierte los colores LVGL al panel,\n`;
+    s += `// por eso la tinta va en bit 0 con paleta index 0 = blanco.\n`;
+    s += `#include <lvgl.h>\n\n`;
+    s += `#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n\n`;
+    s += `#ifndef LV_ATTRIBUTE_IMG_${up}\n#define LV_ATTRIBUTE_IMG_${up}\n#endif\n\n`;
+    s += `const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_${up} uint8_t ${sym}_map[] = {\n`;
+    s += `    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/\n    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n\n`;
+    for (let fy = 0; fy < fbH; fy++) {
+      const row = bytes.slice(fy * rb, fy * rb + rb).map(hex).join(", ");
+      s += "    " + row + ",\n";
+    }
+    s += `};\n\n`;
+    s += `const lv_img_dsc_t ${sym} = {\n`;
+    s += `    .header.cf = LV_COLOR_FORMAT_I1,\n`;
+    s += `    .header.w = ${fbW},\n    .header.h = ${fbH},\n`;
+    s += `    .data_size = ${bytes.length + 8},\n    .data = ${sym}_map,\n};\n`;
+    $("out").value = s;
+  }
+  $("gen").onclick = generate;
+  $("copy").onclick = () => { if (!$("out").value) generate(); $("out").select(); document.execCommand("copy"); };
+  $("download").onclick = () => {
+    if (!$("out").value) generate();
+    const sym = ($("symbol").value || "my_art").replace(/[^a-zA-Z0-9_]/g, "_");
+    const blob = new Blob([$("out").value], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = sym + ".c"; a.click();
+  };
+
+  // ---------- importar C ----------
+  $("loadC").onclick = () => {
+    const raw = $("inC").value;
+    const nums = (raw.match(/0x[0-9a-fA-F]{1,2}/g) || []).map(v => parseInt(v, 16));
+    if (!nums.length) return alert("No encontré bytes (0x..) en el texto.");
+    const wm = raw.match(/\.header\.w\s*=\s*(\d+)/);
+    const hm = raw.match(/\.header\.h\s*=\s*(\d+)/);
+    snapshot();
+    if (wm && hm && +wm[1] > +hm[1]) {
+      // Formato shield: apaisado (rotado 90° horario), paleta + tinta en bit 0
+      const fbW = +wm[1], fbH = +hm[1];
+      const rb = Math.ceil(fbW / 8), need = rb * fbH;
+      let bytes = nums;
+      if (bytes.length >= need + 8) bytes = bytes.slice(bytes.length - need); // salta paleta
+      W = fbH; H = fbW;
+      $("w").value = W; $("h").value = H;
+      bmp = new Uint8Array(W * H);
+      for (let fy = 0; fy < fbH; fy++)
+        for (let fx = 0; fx < fbW; fx++) {
+          const bit = ((bytes[fy * rb + (fx >> 3)] || 0) >> (7 - (fx & 7))) & 1;
+          bmp[idx(fy, H - 1 - fx)] = bit ? 0 : 1;  // deshace rotación e inversión
+        }
+      undoStack.length = redoStack.length = 0;
+    } else {
+      // Array plano vertical (legado): usa el ancho/alto del panel «Lienzo»
+      const rb = rowBytes(), need = rb * H;
+      let bytes = nums;
+      if (nums.length === need + 8 || nums.length > need) bytes = nums.slice(nums.length - need);
+      bmp = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+          const b = bytes[y * rb + (x >> 3)] || 0;
+          bmp[idx(x, y)] = (b >> (7 - (x & 7))) & 1;
+        }
+    }
+    render(); save();
+  };
+
+  // ---------- persistencia ----------
+  function save() {
+    try {
+      localStorage.setItem("nvart", JSON.stringify({ W, H, bmp: Array.from(bmp) }));
+    } catch (_) {}
+  }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem("nvart"));
+      if (d && d.bmp && d.bmp.length === d.W * d.H) {
+        W = d.W; H = d.H; bmp = Uint8Array.from(d.bmp);
+        $("w").value = W; $("h").value = H;
+      }
+    } catch (_) {}
+  }
+
+  load();
+  render();
+})();
+</script>
+</body>
+</html>

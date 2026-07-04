@@ -2,17 +2,13 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: M165437
-      url-base: https://github.com/M165437
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
-    # Pantallas nice!view con diseño gem (animación + WPM).
-    # Sigue main porque zmk arriba también sigue main; deben ir pinneados parejos.
-    - name: nice-view-gem
-      remote: M165437
-      revision: main
+  # El shield de las pantallas ya no viene de un módulo externo: vive en
+  # boards/shields/nice_view_gem (copia de M165437/nice-view-gem adaptada
+  # con arte custom en ambas mitades). Tenerlo aquí además duplicaría el shield.
   self:
     path: config
