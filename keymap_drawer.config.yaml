@@ -18,6 +18,7 @@ parse_config:
     "&kp FSLH": { t: "-", s: "_" }
     "&kp COMMA": { t: ",", s: ";" }
     "&kp DOT": { t: ".", s: ":" }
+    "&bspc_qmark": { t: "BACKSPACE", s: "?" }   # mod-morph: Backspace / con Shift → ?
 
     # ── High: símbolos de programación vía combos Shift/Option de Mac ES-ISO ──
     "&kp LC(LG(SPACE))": "😀 Emoji"       # selector de emojis de macOS
