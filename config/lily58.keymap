@@ -53,11 +53,11 @@
     };
 
     behaviors {
-        // Backspace normal; con Shift envía "?" (LS(MINUS) en ES-ISO).
-        bspc_qmark: bspc_qmark {
+        // "/" suelto (LS(N7) en ES-ISO); con Shift envía "?" (LS(MINUS)).
+        slsh_qmark: slsh_qmark {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
-            bindings = <&kp BACKSPACE>, <&kp LS(MINUS)>;
+            bindings = <&kp LS(N7)>, <&kp LS(MINUS)>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
     };
@@ -68,15 +68,15 @@
         Mac {
             /* MAC (base)
              * ,-----------------------------------------.                    ,-----------------------------------------.
-             * | ESC  |  1   |  2   |  3   |  4   |  5   |                    |  6   |  7   |  8   |  9   |  0   |BkSp/?|
+             * | ESC  |  1   |  2   |  3   |  4   |  5   |                    |  6   |  7   |  8   |  9   |  0   | / ?  |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * | Tab  |  Q   |  W   |  E   |  R   |  T   |                    |  Y   |  U   |  I   |  O   |  P   |Enter |
+             * | Tab  |  Q   |  W   |  E   |  R   |  T   |                    |  Y   |  U   |  I   |  O   |  P   |BkSp  |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
              * | Ctrl |  A   |  S   |  D   |  F   |  G   |-------.    ,-------|  H   |  J   |  K   |  L   |  Ñ   | ´ ¨  |
              * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
              * |Shift |  Z   |  X   |  C   |  V   |  B   |-------|    |-------|  N   |  M   | , ;  | . :  | - _  |Shift |
              * `-----------------------------------------/       /     \      \-----------------------------------------'
-             *                   | LAlt | HIGH | LCmd | /Space  /       \Space \  | RCmd | LOW  | RAlt |
+             *                   | LAlt | HIGH | LCmd | /Space  /       \Space \  |Enter | LOW  | RAlt |
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
@@ -84,15 +84,15 @@
              *   Ñ escribe ñ/Ñ  ·  ´¨ es tecla muerta de acento (Shift: diéresis)
              *   , . - con Shift dan ; : _
              *   Shift+números da los símbolos españoles (! " · $ % & / ( ) =)
-             *   BkSp con Shift envía ? (mod-morph bspc_qmark)
+             *   / suelto y ? con Shift (mod-morph slsh_qmark)
              */
 
             bindings = <
-&kp ESCAPE        &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                 &kp N6             &kp N7  &kp N8         &kp N9   &kp N0    &bspc_qmark
-&kp TAB           &kp Q   &kp W   &kp E         &kp R   &kp T                                  &kp Y              &kp U   &kp I          &kp O    &kp P     &kp ENTER
-&kp LEFT_CONTROL  &kp A   &kp S   &kp D         &kp F   &kp G                                  &kp H              &kp J   &kp K          &kp L    &kp SEMI  &kp SQT
-&kp LEFT_SHIFT    &kp Z   &kp X   &kp C         &kp V   &kp B          &trans       &trans     &kp N              &kp M   &kp COMMA      &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
-                                  &kp LEFT_ALT  &mo 1   &kp LEFT_META  &kp SPACE    &kp SPACE  &kp RIGHT_COMMAND  &mo 2   &kp RIGHT_ALT
+&kp ESCAPE        &kp N1  &kp N2  &kp N3        &kp N4  &kp N5                                 &kp N6         &kp N7  &kp N8         &kp N9   &kp N0    &slsh_qmark
+&kp TAB           &kp Q   &kp W   &kp E         &kp R   &kp T                                  &kp Y          &kp U   &kp I          &kp O    &kp P     &kp BACKSPACE
+&kp LEFT_CONTROL  &kp A   &kp S   &kp D         &kp F   &kp G                                  &kp H          &kp J   &kp K          &kp L    &kp SEMI  &kp SQT
+&kp LEFT_SHIFT    &kp Z   &kp X   &kp C         &kp V   &kp B          &trans       &trans     &kp N          &kp M   &kp COMMA      &kp DOT  &kp FSLH  &kp RIGHT_SHIFT
+                                  &kp LEFT_ALT  &mo 1   &kp LEFT_META  &kp SPACE    &kp SPACE  &kp ENTER      &mo 2   &kp RIGHT_ALT
             >;
 
             label = "Mac";
