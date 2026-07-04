@@ -1,0 +1,29 @@
+#include <zephyr/kernel.h>
+#include "profile.h"
+
+LV_IMG_DECLARE(profiles);
+
+// La franja inferior visible corresponde a las filas 43..67 del canvas
+// (el arte tapa el resto): los puntos van al inicio de esa franja.
+#define PROFILE_DOTS_Y 45
+
+static void draw_inactive_profiles(lv_obj_t *canvas, const struct status_state *state) {
+    lv_draw_image_dsc_t img_dsc;
+    lv_draw_image_dsc_init(&img_dsc);
+
+    canvas_draw_img(canvas, 18, PROFILE_DOTS_Y, &profiles, &img_dsc);
+}
+
+static void draw_active_profile(lv_obj_t *canvas, const struct status_state *state) {
+    lv_draw_rect_dsc_t rect_white_dsc;
+    init_rect_dsc(&rect_white_dsc, LVGL_FOREGROUND);
+
+    int offset = state->active_profile_index * 7;
+
+    canvas_draw_rect(canvas, 18 + offset, PROFILE_DOTS_Y, 3, 3, &rect_white_dsc);
+}
+
+void draw_profile_status(lv_obj_t *canvas, const struct status_state *state) {
+    draw_inactive_profiles(canvas, state);
+    draw_active_profile(canvas, state);
+}
