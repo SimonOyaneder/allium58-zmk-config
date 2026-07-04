@@ -207,13 +207,13 @@
     [{l:'Shift',cls:'mod wide'},{l:'Z',m:['z']},{l:'X',m:['x']},{l:'C',m:['c']},{l:'V',m:['v']},{l:'B',m:['b']}]
   ];
   var BASE_R = [
-    [{l:'6 &',m:['6','&']},{l:'7 /',m:['7','/']},{l:'8 (',m:['8','(']},{l:'9 )',m:['9',')']},{l:'0 =',m:['0','=']},{l:'⌫',m:['Backspace']}],
-    [{l:'Y',m:['y']},{l:'U',m:['u','ú','ü']},{l:'I',m:['i','í']},{l:'O',m:['o','ó']},{l:'P',m:['p']},{l:'⏎',m:['Enter']}],
+    [{l:'6 &',m:['6','&']},{l:'7 /',m:['7','/']},{l:'8 (',m:['8','(']},{l:'9 )',m:['9',')']},{l:'0 =',m:['0','=']},{l:'/ ?',m:['/','?']}],
+    [{l:'Y',m:['y']},{l:'U',m:['u','ú','ü']},{l:'I',m:['i','í']},{l:'O',m:['o','ó']},{l:'P',m:['p']},{l:'⌫',m:['Backspace']}],
     [{l:'H',m:['h']},{l:'J',m:['j']},{l:'K',m:['k']},{l:'L',m:['l']},{l:'Ñ',m:['ñ','~']},{l:'´ ¨',m:['á','é','í','ó','ú','ü'],cls:'wide'}],
     [{l:'N',m:['n']},{l:'M',m:['m']},{l:', ;',m:[',',';']},{l:'. :',m:['.',':']},{l:'- _',m:['-','_']},{l:'Shift',cls:'mod wide'}]
   ];
   var BASE_TL = [{l:'Alt',cls:'mod'},{l:'HIGH',cls:'mod'},{l:'Cmd',cls:'mod'},{l:'␣',m:[' ']}];
-  var BASE_TR = [{l:'␣',m:[' ']},{l:'Cmd',cls:'mod'},{l:'LOW',cls:'mod'},{l:'Alt',cls:'mod'}];
+  var BASE_TR = [{l:'␣',m:[' ']},{l:'⏎',m:['Enter']},{l:'LOW',cls:'mod'},{l:'Alt',cls:'mod'}];
 
   // GH = tecla transparente (&trans): con HIGH activo se comporta igual que la capa base
   function GH(label, cls) { return { l: label, cls: 'ghost' + (cls ? ' ' + cls : '') }; }
@@ -230,7 +230,7 @@
     [{l:'¿',m:['¿']},{l:'¡',m:['¡']},GH(', ;'),GH('. :'),GH('- _'),GH('Shift','wide')]
   ];
   var HIGH_TL = [GH('Alt'),{l:'HIGH',cls:'mod held'},GH('Cmd'),GH('␣')];
-  var HIGH_TR = [GH('␣'),GH('Cmd'),GH('LOW'),GH('Alt')];
+  var HIGH_TR = [GH('␣'),GH('⏎'),GH('LOW'),GH('Alt')];
 
   var cells = []; // { el, tokens }
   function renderHalf(parent, side, rows, thumbs) {
@@ -281,11 +281,11 @@
     T.push({ k: ch, d: ch, h: 'fila superior, capa base', cat: 'num', label: 'número' });
   });
   var core = [
-    { k: 'Enter', d: 'Enter', h: 'extremo derecho de la fila Y–P', small: true },
+    { k: 'Enter', d: 'Enter', h: 'pulgar derecho, a la derecha del espacio', small: true },
     { k: ' ', d: 'Espacio', h: 'pulgares', small: true },
     { k: 'Tab', d: 'Tab', h: 'extremo izquierdo de la fila Q–T', small: true },
     { k: 'Escape', d: 'Esc', h: 'esquina superior izquierda', small: true },
-    { k: 'Backspace', d: '⌫ Borrar', h: 'extremo derecho de la fila de números', small: true },
+    { k: 'Backspace', d: '⌫ Borrar', h: 'extremo derecho de la fila Y–P', small: true },
     { k: 'ñ', d: 'ñ', h: 'tecla Ñ, a la derecha de la L' },
     { k: 'á', d: 'á', h: '<b>´</b> (der. de Ñ) y luego <b>A</b>' },
     { k: 'é', d: 'é', h: '<b>´</b> (der. de Ñ) y luego <b>E</b>' },
@@ -305,7 +305,7 @@
     { k: '$', d: '$', h: '<b>Shift + 4</b>' },
     { k: '%', d: '%', h: '<b>Shift + 5</b>' },
     { k: '&', d: '&', h: '<b>Shift + 6</b>' },
-    { k: '/', d: '/', h: '<b>Shift + 7</b>' },
+    { k: '/', d: '/', h: 'extremo derecho de la fila de números · o <b>Shift + 7</b>' },
     { k: '(', d: '(', h: '<b>Shift + 8</b>' },
     { k: ')', d: ')', h: '<b>Shift + 9</b>' },
     { k: '=', d: '=', h: '<b>Shift + 0</b>' },
@@ -313,13 +313,13 @@
     { k: '@', d: '@', h: '<b>Option + 2</b>' },
     { k: '#', d: '#', h: '<b>Option + 3</b>' },
     { k: '~', d: '~', h: '<b>Option + Ñ</b>' },
-    { k: '?', d: '?', h: 'HIGH + tecla ⌫ (fila de números)' },
+    { k: '?', d: '?', h: '<b>Shift</b> + tecla <b>/</b> (fila de números) · o HIGH + esa tecla' },
     { k: '\\', d: '\\', h: 'HIGH + Y' },
     { k: '+', d: '+', h: 'HIGH + U' },
     { k: '*', d: '*', h: 'HIGH + I' },
     { k: '[', d: '[', h: 'HIGH + O' },
     { k: ']', d: ']', h: 'HIGH + P' },
-    { k: '`', d: '`', h: 'HIGH + Enter (tecla muerta: compón con espacio)' },
+    { k: '`', d: '`', h: 'HIGH + tecla ⌫ (fila Y–P · tecla muerta: compón con espacio)' },
     { k: "'", d: "'", h: 'HIGH + H' },
     { k: '<', d: '<', h: 'HIGH + J' },
     { k: '>', d: '>', h: 'HIGH + K' },
