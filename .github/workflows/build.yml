@@ -1,4 +1,18 @@
-on: [push, pull_request, workflow_dispatch]
+# Compila firmware solo cuando cambia algo que afecta al firmware.
+# Se ignoran docs y los artefactos de keymap-drawer para no compilar firmware
+# "porque sí" (p. ej. el commit automático que regenera la imagen del keymap).
+on:
+  push:
+    paths-ignore:
+      - "keymap-drawer/**"
+      - "keymap_drawer.config.yaml"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "keymap-drawer/**"
+      - "keymap_drawer.config.yaml"
+      - "**/*.md"
+  workflow_dispatch:
 
 jobs:
   build:

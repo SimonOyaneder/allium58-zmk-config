@@ -1,0 +1,43 @@
+# Configuración para keymap-drawer (https://github.com/caksoylar/keymap-drawer)
+#
+# El keymap (config/lily58.keymap) usa keycodes US, pero macOS está configurado
+# en la distribución "Español — ISO". Por eso el carácter que sale de cada tecla
+# NO coincide con el nombre del keycode US. Aquí reetiquetamos cada binding con
+# el símbolo que REALMENTE produce ES-ISO, para que la imagen sea fiel al teclado.
+#
+# Regenerar:
+#   keymap -c keymap_drawer.config.yaml parse -z config/lily58.keymap > keymap-drawer/lily58.yaml
+#   keymap -c keymap_drawer.config.yaml draw keymap-drawer/lily58.yaml   > keymap-drawer/lily58.svg
+# (o simplemente hacer push: el workflow .github/workflows/draw-keymaps.yml lo hace solo)
+
+parse_config:
+  raw_binding_map:
+    # ── Base (Mac): teclas cuya salida en ES-ISO difiere del keycode US ──
+    "&kp SEMI": "Ñ"
+    "&kp SQT": { t: "´", s: "¨" }   # tecla muerta: acento agudo / diéresis (Shift)
+    "&kp FSLH": { t: "-", s: "_" }
+    "&kp COMMA": { t: ",", s: ";" }
+    "&kp DOT": { t: ".", s: ":" }
+
+    # ── High: símbolos de programación vía combos Shift/Option de Mac ES-ISO ──
+    "&kp LC(LG(SPACE))": "😀 Emoji"       # selector de emojis de macOS
+    "&kp LS(MINUS)": "?"
+    # macOS intercambia los scancodes GRAVE y NON_US_BACKSLASH en teclados ISO:
+    # por eso < > van por GRAVE/LS(GRAVE) y \ por LA(NON_US_BACKSLASH).
+    "&kp LA(NON_US_BACKSLASH)": "\\"
+    "&kp RBKT": "+"
+    "&kp LS(RBKT)": "*"
+    "&kp LA(LBKT)": "["
+    "&kp LA(RBKT)": "]"
+    "&es_grave": "`"                      # macro tecla muerta ` + espacio
+    "&kp MINUS": "'"
+    "&kp GRAVE": "<"
+    "&kp LS(GRAVE)": ">"
+    "&kp LA(SQT)": "{"
+    "&kp LA(BSLH)": "}"
+    "&es_caret": "^"                      # macro tecla muerta ^ + espacio
+    "&kp LS(EQUAL)": "¿"
+    "&kp EQUAL": "¡"
+
+    # ── Low ──
+    "&studio_unlock": "Studio\nUnlock"
