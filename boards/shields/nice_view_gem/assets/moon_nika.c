@@ -2,8 +2,9 @@
 // https://github.com/whoop-t/nice-luffy-gear-five (licencia MIT, (c) 2025 whoop-t),
 // invertidos (luna clara / silueta oscura); cupula cerrada por espejo del arco
 // inferior y marca suelta eliminada.
-// Convencion de bits validada en hardware (zmk main + LVGL 9): el render de
-// imagenes I1 ignora la paleta incrustada; bit 0 = NEGRO, bit 1 = BLANCO.
+// Convencion validada en hardware (zmk main + LVGL 9 + nice!view): la paleta
+// SE RESPETA pero el pipeline invierte los colores LVGL al panel (blanco LVGL
+// = pixel negro). Tinta del diseno -> bit 0 -> paleta blanca -> pixel negro.
 // Vertical (fisico): 68 ancho x 104 alto; almacenado rotado 90 grados horario.
 // La pantalla deja 32px arriba (SIG/BAT) y 24px abajo (perfiles BT + capa).
 // Regenerar con: art-editor/generate_moon_nika.py
@@ -18,8 +19,8 @@
 #endif
 
 const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_MOON_NIKA uint8_t moon_nika_map[] = {
-    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/
-    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/
+    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/
+    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/
 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00,

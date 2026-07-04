@@ -1,8 +1,9 @@
 // Paisaje nocturno original (variante V3 'Nubes nocturnas'): luna grande entre
 // franjas de nubes, doble cordillera en dither y lago con destellos.
 // Tecnica inspirada en el estilo 1-bit de hammerbeam (obra original).
-// Convencion de bits validada en hardware (zmk main + LVGL 9): el render de
-// imagenes I1 ignora la paleta incrustada; bit 0 = NEGRO, bit 1 = BLANCO.
+// Convencion validada en hardware (zmk main + LVGL 9 + nice!view): la paleta
+// SE RESPETA pero el pipeline invierte los colores LVGL al panel (blanco LVGL
+// = pixel negro). Tinta del diseno -> bit 0 -> paleta blanca -> pixel negro.
 // Vertical (fisico): 68 ancho x 128 alto; almacenado rotado 90 grados horario.
 // Regenerar con: art-editor/generate_night_mountains.py (funcion v3)
 #include <lvgl.h>
@@ -16,8 +17,8 @@
 #endif
 
 const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_NIGHT_MOUNTAINS uint8_t night_mountains_map[] = {
-    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/
-    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/
+    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/
+    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/
 
     0x00, 0x00, 0x0a, 0xaa, 0xaa, 0x00, 0x00, 0x00, 0x12, 0xc0, 0x00, 0x10, 0x00, 0x20, 0x80, 0x00,
     0x00, 0x00, 0x04, 0x55, 0x55, 0x08, 0x00, 0x00, 0x05, 0xc0, 0x00, 0x00, 0x00, 0x81, 0x80, 0x01,

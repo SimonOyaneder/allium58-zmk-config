@@ -83,11 +83,12 @@ def pack_bytes(px):
 def export_c(px, sym, fixed_palette=True):
     """Genera un .c estilo LVGL9 (como los assets del shield).
 
-    OJO (validado en hardware, zmk main + LVGL 9): el render de imágenes I1
-    ignora la paleta incrustada y usa los bits crudos con la convención de
-    zmk stock: bit 0 = NEGRO, bit 1 = BLANCO. Por eso aquí se empaqueta
-    invertido respecto al diseño (1 = tinta negra -> bit 0) y la paleta se
-    escribe fija en esa misma convención (solo documental).
+    OJO (validado en hardware, zmk main + LVGL 9 + nice!view): la paleta
+    incrustada SÍ se respeta, pero el pipeline del panel INVIERTE los colores
+    LVGL: color blanco -> pixel NEGRO en pantalla, color negro -> BLANCO.
+    Para que la tinta del diseño (1) se vea negra debe mapear a color LVGL
+    blanco: se empaqueta 1 = tinta -> bit 0 y la paleta lleva index 0 = blanco.
+    (Es el mismo motivo por el que el gem se ve oscuro con INVERTED=n.)
     """
     h, w = len(px), len(px[0])
     data = pack_bytes([[1 - v for v in row] for row in px])
@@ -98,8 +99,8 @@ def export_c(px, sym, fixed_palette=True):
     lines.append("#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n")
     lines.append(f"#ifndef LV_ATTRIBUTE_IMG_{up}\n#define LV_ATTRIBUTE_IMG_{up}\n#endif\n")
     lines.append(f"const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_{up} uint8_t {sym}_map[] = {{")
-    lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/")
-    lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/\n")
+    lines.append("    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/")
+    lines.append("    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n")
     for y in range(h):
         row = data[y * stride:(y + 1) * stride]
         lines.append("    " + ", ".join(f"0x{v:02x}" for v in row) + ",")
