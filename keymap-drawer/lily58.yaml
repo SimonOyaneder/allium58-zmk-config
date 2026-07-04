@@ -12,7 +12,7 @@ layers:
   - '8'
   - '9'
   - '0'
-  - {t: BACKSPACE, s: '?'}
+  - {t: Sft+7, s: '?'}
   - TAB
   - Q
   - W
@@ -24,7 +24,7 @@ layers:
   - I
   - O
   - P
-  - ENTER
+  - BACKSPACE
   - LEFT CONTROL
   - A
   - S
@@ -56,7 +56,7 @@ layers:
   - LEFT META
   - SPACE
   - SPACE
-  - RIGHT COMMAND
+  - ENTER
   - Low
   - RIGHT ALT
   High:
