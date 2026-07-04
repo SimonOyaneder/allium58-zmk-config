@@ -3,9 +3,9 @@
 
 LV_IMG_DECLARE(profiles);
 
-// La franja inferior visible corresponde a las filas 43..67 del canvas
-// (el arte tapa el resto): los puntos van al inicio de esa franja.
-#define PROFILE_DOTS_Y 45
+// La franja inferior visible de 8px corresponde a las filas 60..67 del canvas
+// (el arte tapa el resto): los puntos van centrados en ella.
+#define PROFILE_DOTS_Y 62
 
 static void draw_inactive_profiles(lv_obj_t *canvas, const struct status_state *state) {
     lv_draw_image_dsc_t img_dsc;

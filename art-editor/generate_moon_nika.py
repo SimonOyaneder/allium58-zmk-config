@@ -6,8 +6,12 @@ luna clara / silueta oscura sobre cielo negro. El bitmap original viene con
 la cúpula recortada (~4 filas) y una marca suelta más abajo: la cúpula se
 cierra espejando el arco inferior por columna y la marca se elimina.
 
-El lienzo es 68x120: la pantalla izquierda deja 16px arriba (fila única
-con icono de conexión + % de batería) y 24px abajo (perfiles BT + capa).
+OJO: este script regenera la luna DESDE CERO a partir del repo fuente.
+Los retoques hechos a mano en assets/moon_nika.c (via art-editor) se
+pierden si se reinstala esta salida; el archivo .c es la fuente de verdad.
+
+El lienzo es 68x136: la pantalla izquierda deja 16px arriba (fila única
+con icono de conexión + % de batería) y 8px abajo (puntos de perfil BT).
 """
 import sys
 sys.path.insert(0, ".")
@@ -64,8 +68,8 @@ for x, t_exp in tops_exp.items():
 # ---------- invertir: luna clara / silueta oscura, entorno negro ----------
 moon = [[1 - v for v in row] for row in moon]
 
-# lienzo 68 x 120, cielo negro (1 = tinta negra)
-W, H = 68, 120
+# lienzo 68 x 136, cielo negro (1 = tinta negra)
+W, H = 68, 136
 art = [[1] * W for _ in range(H)]
 
 oy = (H - h) // 2
@@ -84,11 +88,11 @@ def star(cx, cy_, size=1):
 def dot(cx, cy_):
     art[cy_][cx] = 0
 
-# estrellas en el cielo alrededor de la luna
-star(10, 7, 2); star(44, 5, 1); star(61, 12, 1); star(27, 16, 1)
-dot(26, 3); dot(54, 2); dot(5, 15); dot(65, 19); dot(35, 9); dot(16, 21)
-star(9, 104, 1); star(41, 108, 1); star(59, 102, 2); star(25, 112, 1)
-dot(20, 110); dot(50, 105); dot(32, 101); dot(65, 109); dot(12, 98); dot(45, 116)
+# estrellas en el cielo alrededor de la luna (cielo amplio arriba y abajo)
+star(10, 7, 2); star(44, 5, 1); star(61, 13, 1); star(27, 17, 1); star(50, 25, 1); star(7, 22, 1)
+dot(26, 3); dot(54, 2); dot(5, 12); dot(65, 20); dot(35, 10); dot(16, 24); dot(60, 4); dot(40, 28)
+star(9, 112, 1); star(41, 117, 1); star(59, 109, 2); star(25, 124, 1); star(48, 130, 1); star(12, 129, 1)
+dot(20, 114); dot(50, 108); dot(32, 106); dot(65, 115); dot(8, 120); dot(45, 122); dot(56, 126); dot(30, 133); dot(63, 132)
 
 write_png("left_design.png", art, W, H, 4)
 fb_out = rot_cw(art)
