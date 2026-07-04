@@ -6,8 +6,8 @@ luna clara / silueta oscura sobre cielo negro. El bitmap original viene con
 la cúpula recortada (~4 filas) y una marca suelta más abajo: la cúpula se
 cierra espejando el arco inferior por columna y la marca se elimina.
 
-El lienzo es 68x104: la pantalla izquierda deja 32px arriba (SIG/BAT) y
-24px abajo (selector de perfil BT + capa).
+El lienzo es 68x120: la pantalla izquierda deja 16px arriba (fila única
+con icono de conexión + % de batería) y 24px abajo (perfiles BT + capa).
 """
 import sys
 sys.path.insert(0, ".")
@@ -64,8 +64,8 @@ for x, t_exp in tops_exp.items():
 # ---------- invertir: luna clara / silueta oscura, entorno negro ----------
 moon = [[1 - v for v in row] for row in moon]
 
-# lienzo 68 x 104, cielo negro (1 = tinta negra)
-W, H = 68, 104
+# lienzo 68 x 120, cielo negro (1 = tinta negra)
+W, H = 68, 120
 art = [[1] * W for _ in range(H)]
 
 oy = (H - h) // 2
@@ -85,10 +85,10 @@ def dot(cx, cy_):
     art[cy_][cx] = 0
 
 # estrellas en el cielo alrededor de la luna
-star(10, 6, 2); star(44, 4, 1); star(61, 9, 1)
-dot(26, 3); dot(54, 2); dot(5, 14); dot(65, 16); dot(35, 8)
-star(8, 96, 1); star(40, 99, 1); star(59, 94, 2)
-dot(20, 101); dot(50, 96); dot(30, 94); dot(65, 100); dot(12, 88)
+star(10, 7, 2); star(44, 5, 1); star(61, 12, 1); star(27, 16, 1)
+dot(26, 3); dot(54, 2); dot(5, 15); dot(65, 19); dot(35, 9); dot(16, 21)
+star(9, 104, 1); star(41, 108, 1); star(59, 102, 2); star(25, 112, 1)
+dot(20, 110); dot(50, 105); dot(32, 101); dot(65, 109); dot(12, 98); dot(45, 116)
 
 write_png("left_design.png", art, W, H, 4)
 fb_out = rot_cw(art)

@@ -22,9 +22,10 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "profile.h"
 #include "screen.h"
 
-// Arte: luna con Nika, 104x68 en orientación de framebuffer (68x104 físico).
+// Arte: luna con Nika, 120x68 en orientación de framebuffer (68x120 físico).
 // Se dibuja ENCIMA de los canvas de estado dejando dos franjas visibles:
-// 32px arriba (SIG y BAT) y 24px abajo (selector de perfil BT y capa).
+// 16px arriba (icono de conexión + % de batería en una fila) y 24px abajo
+// (selector de perfil BT y capa).
 LV_IMG_DECLARE(moon_nika);
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
@@ -181,7 +182,7 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_canvas_set_buffer(bottom, widget->cbuf2, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
-    // Arte encima (hijo 2): deja 24px abajo y 32px arriba de franjas visibles
+    // Arte encima (hijo 2): deja 24px abajo y 16px arriba de franjas visibles
     lv_obj_t *art = lv_img_create(widget->obj);
     lv_img_set_src(art, &moon_nika);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 24, 0);

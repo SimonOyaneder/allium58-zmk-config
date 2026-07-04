@@ -17,9 +17,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "output.h"
 #include "screen_peripheral.h"
 
-// Arte: paisaje nocturno original, 128x68 en orientación de framebuffer (68x128 físico).
-// Se dibuja ENCIMA del canvas de estado y deja visible una franja de 32px
-// (parte superior física) para las filas SIG y BAT.
+// Arte: paisaje nocturno original, 144x68 en orientación de framebuffer (68x144 físico).
+// Se dibuja ENCIMA del canvas de estado y deja visible una franja de 16px
+// (parte superior física) con el icono de conexión y el % de batería.
 LV_IMG_DECLARE(night_mountains);
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
@@ -117,7 +117,7 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
-    // Arte encima (hijo 1): tapa el canvas salvo la franja superior física de 32px
+    // Arte encima (hijo 1): tapa el canvas salvo la franja superior física de 16px
     lv_obj_t *art = lv_img_create(widget->obj);
     lv_img_set_src(art, &night_mountains);
     lv_obj_align(art, LV_ALIGN_TOP_LEFT, 0, 0);
