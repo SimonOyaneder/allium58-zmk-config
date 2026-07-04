@@ -14,6 +14,10 @@
  * Ñ, ´¨, coma/punto/guión con sus Shift y ¡¿ son nativos de esa distribución;
  * los símbolos de programación del layer HIGH se generan con los combos
  * Shift/Option propios del teclado español de Mac.
+ *
+ * OJO: macOS intercambia los scancodes GRAVE y NON_US_BACKSLASH en teclados
+ * ISO. Por eso aquí <, > se envían con GRAVE / LS(GRAVE), y º, ª, \ con
+ * NON_US_BACKSLASH. No revertir: enviar NON_US_BACKSLASH para < da "º".
  */
 
 / {
@@ -106,8 +110,8 @@
 
             bindings = <
 &kp LC(LG(SPACE))  &trans  &trans  &trans  &trans  &trans                          &trans        &trans     &trans        &trans        &trans        &kp LS(MINUS)
-&trans             &trans  &trans  &trans  &trans  &trans                          &kp LA(GRAVE) &kp RBKT   &kp LS(RBKT)  &kp LA(LBKT)  &kp LA(RBKT)  &es_grave
-&trans             &trans  &trans  &trans  &trans  &trans                          &kp MINUS     &kp NON_US_BACKSLASH     &kp LS(NON_US_BACKSLASH)    &kp LA(SQT)   &kp LA(BSLH)  &es_caret
+&trans             &trans  &trans  &trans  &trans  &trans                          &kp LA(NON_US_BACKSLASH) &kp RBKT   &kp LS(RBKT)  &kp LA(LBKT)  &kp LA(RBKT)  &es_grave
+&trans             &trans  &trans  &trans  &trans  &trans                          &kp MINUS     &kp GRAVE                &kp LS(GRAVE)              &kp LA(SQT)   &kp LA(BSLH)  &es_caret
 &trans             &trans  &trans  &trans  &trans  &trans  &trans    &trans        &kp LS(EQUAL) &kp EQUAL  &trans        &trans        &trans        &trans
                                    &trans  &trans  &trans  &trans    &trans        &trans        &trans     &trans
             >;
