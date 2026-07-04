@@ -182,10 +182,11 @@
         <button id="resize" style="align-self:flex-end">Aplicar</button>
       </div>
       <div class="row">
-        <button data-preset="68x68">zona arte 68×68</button>
-        <button data-preset="68x160">completa (vertical) 68×160</button>
+        <button data-preset="68x120">izquierda 68×120</button>
+        <button data-preset="68x144">derecha 68×144</button>
+        <button data-preset="68x160">completa 68×160</button>
       </div>
-      <p class="hint">Diseñas en <b>vertical, como ves la pantalla</b> (68 de ancho). La zona del crystal —donde va el arte manteniendo batería/BT— es ~68×68. La pantalla completa es 68×160.</p>
+      <p class="hint">Diseñas en <b>vertical, como ves la pantalla</b> (68 de ancho). Con la franja compacta el arte mide <b>68×120</b> en la izquierda (16px de estado arriba + 24px de perfiles/capa abajo) y <b>68×144</b> en la derecha (16px arriba).</p>
     </div>
 
     <div class="card">
@@ -228,11 +229,7 @@
           <input type="text" id="symbol" value="my_art">
         </label>
       </div>
-      <div class="row">
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
-          <input type="checkbox" id="wrapInv" checked> incluir bloque <code>#if …_INVERTED</code>
-        </label>
-      </div>
+      <p class="hint">Genera el archivo completo en <b>formato shield</b>: rotado 90° horario y con los bits invertidos (tinta = bit 0, paleta index 0 = blanco), tal como lo espera el pipeline de zmk main + LVGL 9. Pega el resultado tal cual en <code>boards/shields/nice_view_gem/assets/</code>.</p>
       <div class="row">
         <button id="gen" class="primary">Generar</button>
         <button id="copy">Copiar</button>
@@ -243,7 +240,7 @@
 
     <div class="card">
       <h2>Importar C existente</h2>
-      <p class="hint">Pega el contenido de un <code>*_map[]</code> (con o sin la paleta). Ajusta ancho/alto arriba y pulsa Cargar.</p>
+      <p class="hint">Pega el contenido <b>completo</b> de <code>assets/moon_nika.c</code> o <code>night_mountains.c</code>: detecta el formato shield (rotado + bits invertidos) por el descriptor y lo endereza para editar. Un array plano vertical también funciona (usa el ancho/alto del panel «Lienzo»).</p>
       <textarea id="inC" spellcheck="false" placeholder="0xff,0xff,… o el bloque completo del .c"></textarea>
       <div class="row">
         <button id="loadC">Cargar bytes</button>
@@ -565,31 +562,46 @@
     return out;
   }
   function hex(n) { return "0x" + n.toString(16).padStart(2, "0"); }
+  // Formato shield (zmk main + LVGL 9 + nice!view, validado en hardware):
+  // se almacena rotado 90° horario y la paleta SÍ se respeta, pero el
+  // pipeline invierte los colores LVGL al panel (blanco LVGL = pixel negro).
+  // Por eso la tinta del diseño va en bit 0 con paleta index 0 = blanco.
   function generate() {
     const sym = ($("symbol").value || "my_art").replace(/[^a-zA-Z0-9_]/g, "_");
-    const bytes = packBytes(), rb = rowBytes();
     const up = sym.toUpperCase();
+    const fbW = H, fbH = W;                       // framebuffer apaisado
+    const rb = Math.ceil(fbW / 8);
+    const bytes = [];
+    for (let fy = 0; fy < fbH; fy++)
+      for (let b = 0; b < rb; b++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const fx = b * 8 + bit;
+          if (fx >= fbW) continue;
+          const v = bmp[idx(fy, H - 1 - fx)];     // diseño -> fb (rot. horaria)
+          if (!v) byte |= (1 << (7 - bit));       // tinta = bit 0
+        }
+        bytes.push(byte);
+      }
     let s = "";
+    s += `// Generado con art-editor/index.html (formato shield nice_view_gem).\n`;
+    s += `// Diseño ${W}x${H} vertical físico; almacenado rotado 90 grados horario (${fbW}x${fbH}).\n`;
+    s += `// zmk main + LVGL 9: el pipeline invierte los colores LVGL al panel,\n`;
+    s += `// por eso la tinta va en bit 0 con paleta index 0 = blanco.\n`;
+    s += `#include <lvgl.h>\n\n`;
+    s += `#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n\n`;
     s += `#ifndef LV_ATTRIBUTE_IMG_${up}\n#define LV_ATTRIBUTE_IMG_${up}\n#endif\n\n`;
     s += `const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_${up} uint8_t ${sym}_map[] = {\n`;
-    if ($("wrapInv").checked) {
-      s += `#if CONFIG_NICE_VIEW_WIDGET_INVERTED\n`;
-      s += `    0x00, 0x00, 0x00, 0xff, /*Color of index 0*/\n    0xff, 0xff, 0xff, 0xff, /*Color of index 1*/\n`;
-      s += `#else\n`;
-      s += `    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/\n    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n`;
-      s += `#endif\n\n`;
-    } else {
-      s += `    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/\n    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n\n`;
-    }
-    for (let y = 0; y < H; y++) {
-      const row = bytes.slice(y * rb, y * rb + rb).map(hex).join(", ");
+    s += `    0xff, 0xff, 0xff, 0xff, /*Color of index 0*/\n    0x00, 0x00, 0x00, 0xff, /*Color of index 1*/\n\n`;
+    for (let fy = 0; fy < fbH; fy++) {
+      const row = bytes.slice(fy * rb, fy * rb + rb).map(hex).join(", ");
       s += "    " + row + ",\n";
     }
     s += `};\n\n`;
     s += `const lv_img_dsc_t ${sym} = {\n`;
     s += `    .header.cf = LV_COLOR_FORMAT_I1,\n`;
-    s += `    .header.w = ${W},\n    .header.h = ${H},\n`;
-    s += `    .data_size = ${dataSize()},\n    .data = ${sym}_map,\n};\n`;
+    s += `    .header.w = ${fbW},\n    .header.h = ${fbH},\n`;
+    s += `    .data_size = ${bytes.length + 8},\n    .data = ${sym}_map,\n};\n`;
     $("out").value = s;
   }
   $("gen").onclick = generate;
@@ -597,7 +609,7 @@
   $("download").onclick = () => {
     if (!$("out").value) generate();
     const sym = ($("symbol").value || "my_art").replace(/[^a-zA-Z0-9_]/g, "_");
-    const blob = new Blob(["#include <lvgl.h>\n\n#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n\n" + $("out").value], { type: "text/plain" });
+    const blob = new Blob([$("out").value], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = sym + ".c"; a.click();
   };
@@ -607,17 +619,36 @@
     const raw = $("inC").value;
     const nums = (raw.match(/0x[0-9a-fA-F]{1,2}/g) || []).map(v => parseInt(v, 16));
     if (!nums.length) return alert("No encontré bytes (0x..) en el texto.");
-    const rb = rowBytes(), need = rb * H;
-    // Si trae paleta (8 bytes) + datos, salta la paleta
-    let bytes = nums;
-    if (nums.length === need + 8 || nums.length > need) bytes = nums.slice(nums.length - need);
+    const wm = raw.match(/\.header\.w\s*=\s*(\d+)/);
+    const hm = raw.match(/\.header\.h\s*=\s*(\d+)/);
     snapshot();
-    bmp = new Uint8Array(W * H);
-    for (let y = 0; y < H; y++)
-      for (let x = 0; x < W; x++) {
-        const b = bytes[y * rb + (x >> 3)] || 0;
-        bmp[idx(x, y)] = (b >> (7 - (x & 7))) & 1;
-      }
+    if (wm && hm && +wm[1] > +hm[1]) {
+      // Formato shield: apaisado (rotado 90° horario), paleta + tinta en bit 0
+      const fbW = +wm[1], fbH = +hm[1];
+      const rb = Math.ceil(fbW / 8), need = rb * fbH;
+      let bytes = nums;
+      if (bytes.length >= need + 8) bytes = bytes.slice(bytes.length - need); // salta paleta
+      W = fbH; H = fbW;
+      $("w").value = W; $("h").value = H;
+      bmp = new Uint8Array(W * H);
+      for (let fy = 0; fy < fbH; fy++)
+        for (let fx = 0; fx < fbW; fx++) {
+          const bit = ((bytes[fy * rb + (fx >> 3)] || 0) >> (7 - (fx & 7))) & 1;
+          bmp[idx(fy, H - 1 - fx)] = bit ? 0 : 1;  // deshace rotación e inversión
+        }
+      undoStack.length = redoStack.length = 0;
+    } else {
+      // Array plano vertical (legado): usa el ancho/alto del panel «Lienzo»
+      const rb = rowBytes(), need = rb * H;
+      let bytes = nums;
+      if (nums.length === need + 8 || nums.length > need) bytes = nums.slice(nums.length - need);
+      bmp = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+          const b = bytes[y * rb + (x >> 3)] || 0;
+          bmp[idx(x, y)] = (b >> (7 - (x & 7))) & 1;
+        }
+    }
     render(); save();
   };
 
