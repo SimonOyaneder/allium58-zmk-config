@@ -122,11 +122,11 @@
              */
 
             bindings = <
-&kp LC(LG(SPACE))  &trans  &trans  &trans  &trans  &trans                             &trans                    &trans     &trans         &trans        &trans        &kp LS(MINUS)
-&trans             &trans  &trans  &trans  &trans  &trans                             &kp LA(NON_US_BACKSLASH)  &kp RBKT   &kp LS(RBKT)   &kp LA(LBKT)  &kp LA(RBKT)  &es_grave
-&trans             &trans  &trans  &trans  &trans  &trans                             &kp MINUS                 &kp GRAVE  &kp LS(GRAVE)  &kp LA(SQT)   &kp LA(BSLH)  &es_caret
-&trans             &trans  &trans  &trans  &trans  &trans  &kp PRINTSCREEN    &trans  &kp LS(EQUAL)             &kp EQUAL  &trans         &trans        &trans        &trans
-                                   &trans  &trans  &trans  &trans             &trans  &trans                    &trans     &trans
+&kp LC(LG(SPACE))  &trans  &trans  &trans  &trans  &trans                                  &trans                    &trans     &trans         &trans        &trans        &kp LS(MINUS)
+&trans             &trans  &trans  &trans  &trans  &trans                                  &kp LA(NON_US_BACKSLASH)  &kp RBKT   &kp LS(RBKT)   &kp LA(LBKT)  &kp LA(RBKT)  &es_grave
+&trans             &trans  &trans  &trans  &trans  &trans                                  &kp MINUS                 &kp GRAVE  &kp LS(GRAVE)  &kp LA(SQT)   &kp LA(BSLH)  &es_caret
+&trans             &trans  &trans  &trans  &trans  &trans  &kp LS(LG(NUMBER_4))    &trans  &kp LS(EQUAL)             &kp EQUAL  &trans         &trans        &trans        &trans
+                                   &trans  &trans  &trans  &trans                  &trans  &trans                    &trans     &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
@@ -156,7 +156,7 @@
 &trans             &kp F1        &kp F2        &kp F3  &kp F4  &kp F5                        &kp F6  &kp F7          &kp F8        &kp F9     &kp F10  &kp F11
 &bt BT_SEL 0       &bt BT_SEL 1  &bt BT_SEL 2  &trans  &trans  &bt BT_CLR                    &trans  &trans          &kp UP_ARROW  &trans     &trans   &kp F12
 &trans             &trans        &trans        &trans  &trans  &trans                        &trans  &kp LEFT_ARROW  &kp DOWN      &kp RIGHT  &trans   &trans
-&ext_power EP_TOG  &trans        &trans        &trans  &trans  &trans      &trans    &trans  &trans  &trans          &trans        &trans     &trans   &kp K_COFFEE
+&ext_power EP_TOG  &trans        &trans        &trans  &trans  &trans      &trans    &trans  &trans  &trans          &trans        &trans     &trans   &kp LC(LG(Q))
                                                &trans  &trans  &trans      &trans    &trans  &trans  &trans          &trans
             >;
 
