@@ -102,7 +102,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - PRINTSCREEN
   - {t: ▽, type: trans}
   - ¿
   - ¡
@@ -137,11 +137,11 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - BT CLR
-  - PREVIOUS
-  - VOLUME DOWN
-  - PLAY PAUSE
-  - VOLUME UP
-  - NEXT
+  - {t: ▽, type: trans}
+  - {t: ▽, type: trans}
+  - UP ARROW
+  - {t: ▽, type: trans}
+  - {t: ▽, type: trans}
   - F12
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
@@ -151,9 +151,9 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - LEFT ARROW
-  - UP ARROW
-  - DOWN ARROW
-  - RIGHT ARROW
+  - DOWN
+  - RIGHT
+  - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - EP TOG
   - {t: ▽, type: trans}
@@ -163,14 +163,12 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - KP PLUS
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - 'Studio
-
-    Unlock'
+  - {t: ▽, type: trans}
+  - COFFEE
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
