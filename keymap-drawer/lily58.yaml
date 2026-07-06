@@ -12,13 +12,13 @@ layers:
   - '8'
   - '9'
   - '0'
-  - {t: Sft+7, s: '?'}
+  - {t: '''', s: '?'}
   - TAB
   - Q
-  - W
+  - {t: W, h: ⌘W}
   - E
-  - R
-  - T
+  - {t: R, h: ⌘R}
+  - {t: T, h: ⌘T}
   - Y
   - U
   - I
@@ -26,10 +26,10 @@ layers:
   - P
   - BACKSPACE
   - LEFT CONTROL
-  - A
-  - S
+  - {t: A, h: ⌘A}
+  - {t: S, h: ⌘S}
   - D
-  - F
+  - {t: F, h: ⌘F}
   - G
   - H
   - J
@@ -38,10 +38,10 @@ layers:
   - Ñ
   - {t: ´, s: ¨}
   - LEFT SHIFT
-  - Z
-  - X
-  - C
-  - V
+  - {t: Z, h: ⌘Z}
+  - {t: X, h: ⌘X}
+  - {t: C, h: ⌘C}
+  - {t: V, h: ⌘V}
   - B
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
@@ -90,7 +90,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - ''''
+  - {t: '''', s: '?'}
   - <
   - '>'
   - '{'
@@ -138,9 +138,13 @@ layers:
   - {t: ▽, type: trans}
   - BT CLR
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - '⌃←
+
+    escritorio'
   - UP ARROW
-  - {t: ▽, type: trans}
+  - '⌃→
+
+    escritorio'
   - {t: ▽, type: trans}
   - F12
   - {t: ▽, type: trans}
@@ -168,7 +172,9 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - Ctl+Gui+Q
+  - '🔒
+
+    Lock'
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
