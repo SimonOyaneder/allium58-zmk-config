@@ -64,9 +64,9 @@
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "tap-preferred";
-            tapping-term-ms = <300>;
+            tapping-term-ms = <250>;
             quick-tap-ms = <200>;
-            require-prior-idle-ms = <150>;
+            require-prior-idle-ms = <300>;
             bindings = <&kp>, <&kp>;
         };
     };
@@ -95,7 +95,7 @@
              *   Shift+números da los símbolos españoles (! " · $ % & / ( ) =)
              *   ' suelto y ? con Shift (tecla MINUS nativa de ES-ISO)
              *
-             * Hold-tap (&hc): mantener ~0.3s una de estas teclas envía ⌘+tecla:
+             * Hold-tap (&hc): mantener ~0.25s una de estas teclas envía ⌘+tecla:
              *   Z X C V -> ⌘Z ⌘X ⌘C ⌘V  (deshacer, cortar, copiar, pegar)
              *   A S F   -> ⌘A ⌘S ⌘F      (seleccionar todo, guardar, buscar)
              *   T W R   -> ⌘T ⌘W ⌘R      (nueva pestaña, cerrar, recargar)
