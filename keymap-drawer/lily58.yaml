@@ -85,8 +85,12 @@ layers:
   - ']'
   - '`'
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - '⌘[
+
+    atrás'
+  - '⌘]
+
+    adelante'
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
