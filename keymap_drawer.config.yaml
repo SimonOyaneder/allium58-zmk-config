@@ -51,6 +51,10 @@ parse_config:
     "&es_caret": "^"                      # macro tecla muerta ^ + espacio
     "&kp LS(EQUAL)": "¿"
     "&kp EQUAL": "¡"
+    # Atrás/adelante (Safari, Chrome, Finder). En ES-ISO [ ] llevan Option,
+    # por eso el keycode incluye LA(); macOS resuelve el atajo igual como ⌘[ ⌘].
+    "&kp LG(LA(LBKT))": "⌘[\natrás"
+    "&kp LG(LA(RBKT))": "⌘]\nadelante"
 
     # ── Low ──
     "&kp LC(LEFT)": "⌃←\nescritorio"    # cambiar de escritorio en macOS

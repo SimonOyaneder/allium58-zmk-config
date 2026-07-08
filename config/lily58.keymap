@@ -120,7 +120,7 @@
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
              * |      |      |      |      |      |      |                    |  \   |  +   |  *   |  [   |  ]   |  `   |
              * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-             * |      |      |      |      |      |      |-------.    ,-------|  '   |  <   |  >   |  {   |  }   |  ^   |
+             * |      |  ⌘[  |  ⌘]  |      |      |      |-------.    ,-------|  '   |  <   |  >   |  {   |  }   |  ^   |
              * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
              * |      |      |      |      |      |      |-------|    |-------|  ¿   |  ¡   |      |      |      |      |
              * `-----------------------------------------/       /     \      \-----------------------------------------'
@@ -128,16 +128,19 @@
              *                   |      |      |      |/       /         \      \ |      |      |      |
              *                   `----------------------------'           '------''--------------------'
              *
-             * Todo concentrado en la mano derecha, mano izquierda libre (trans).
-             * Cada tecla envía su combo nativo de "Española — ISO", así que macOS
-             * debe estar en esa distribución. Emoji abre el selector de emojis
-             * de macOS (Ctrl+Cmd+Espacio).
+             * Símbolos concentrados en la mano derecha; en la izquierda, A/S son
+             * atrás/adelante (⌘[ / ⌘]) para Safari, Chrome y Finder, como los
+             * botones laterales de un mouse. En ES-ISO [ y ] llevan Option, por
+             * eso se envían como ⌘⌥+tecla: macOS resuelve el atajo por el
+             * carácter producido. Cada tecla envía su combo nativo de
+             * "Española — ISO", así que macOS debe estar en esa distribución.
+             * Emoji abre el selector de emojis de macOS (Ctrl+Cmd+Espacio).
              */
 
             bindings = <
 &kp LC(LG(SPACE))  &trans  &trans  &trans  &trans  &trans                                  &trans                    &trans     &trans         &trans        &trans        &kp LS(MINUS)
 &trans             &trans  &trans  &trans  &trans  &trans                                  &kp LA(NON_US_BACKSLASH)  &kp RBKT   &kp LS(RBKT)   &kp LA(LBKT)  &kp LA(RBKT)  &es_grave
-&trans             &trans  &trans  &trans  &trans  &trans                                  &kp MINUS                 &kp GRAVE  &kp LS(GRAVE)  &kp LA(SQT)   &kp LA(BSLH)  &es_caret
+&trans             &kp LG(LA(LBKT))  &kp LG(LA(RBKT))  &trans  &trans  &trans            &kp MINUS                 &kp GRAVE  &kp LS(GRAVE)  &kp LA(SQT)   &kp LA(BSLH)  &es_caret
 &trans             &trans  &trans  &trans  &trans  &trans  &kp LS(LG(NUMBER_4))    &trans  &kp LS(EQUAL)             &kp EQUAL  &trans         &trans        &trans        &trans
                                    &trans  &trans  &trans  &trans                  &trans  &trans                    &trans     &trans
             >;
