@@ -85,10 +85,10 @@ layers:
   - ']'
   - '`'
   - {t: ▽, type: trans}
-  - '⌘[
+  - '🖱◀
 
     atrás'
-  - '⌘]
+  - '🖱▶
 
     adelante'
   - {t: ▽, type: trans}
@@ -169,8 +169,12 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - '⏯
+
+    play/pausa'
+  - '🔇
+
+    mute'
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}

@@ -51,13 +51,15 @@ parse_config:
     "&es_caret": "^"                      # macro tecla muerta ^ + espacio
     "&kp LS(EQUAL)": "¿"
     "&kp EQUAL": "¡"
-    # Atrás/adelante (Safari, Chrome, Finder). En ES-ISO [ ] llevan Option,
-    # por eso el keycode incluye LA(); macOS resuelve el atajo igual como ⌘[ ⌘].
-    "&kp LG(LA(LBKT))": "⌘[\natrás"
-    "&kp LG(LA(RBKT))": "⌘]\nadelante"
+    # Atrás/adelante: botones 4/5 del mouse por HID (como los botones laterales
+    # de un mouse Logitech MX) — independientes de la distribución y de atajos ⌘.
+    "&mkp MB4": "🖱◀\natrás"
+    "&mkp MB5": "🖱▶\nadelante"
 
     # ── Low ──
     "&kp LC(LEFT)": "⌃←\nescritorio"    # cambiar de escritorio en macOS
     "&kp LC(RIGHT)": "⌃→\nescritorio"
     "&kp LC(LG(Q))": "🔒\nLock"         # ⌃⌘Q: bloquear pantalla de macOS
+    "&kp C_PLAY_PAUSE": "⏯\nplay/pausa" # teclas interiores sobre los pulgares
+    "&kp C_MUTE": "🔇\nmute"
     "&studio_unlock": "Studio\nUnlock"
