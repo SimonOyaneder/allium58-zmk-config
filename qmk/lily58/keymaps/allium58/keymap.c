@@ -151,25 +151,28 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                      _______, _______, _______, _______,    _______, _______, _______, _______
     ),
 
-    /* LOW (funciones, flechas, escritorios y media)
+    /* LOW (funciones, flechas, escritorios, media y RGB)
      * ,-----------------------------------------.                    ,-----------------------------------------.
      * |      |  F1  |  F2  |  F3  |  F4  |  F5  |                    |  F6  |  F7  |  F8  |  F9  | F10  | F11  |
      * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-     * |      |      |      |      |      | BOOT |                    |      | ⌃ <- |  ^   | ⌃ -> |      | F12  |
+     * |RGB ⏻ |EFX ▶ |EFX ◀ |      |      | BOOT |                    |      | ⌃ <- |  ^   | ⌃ -> |      | F12  |
      * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
-     * |      |      |      |      |      |      |-------.    ,-------|      |  <-  |  v   |  ->  |      |      |
+     * |      | HUE+ | SAT+ | BRI+ | VEL+ |      |-------.    ,-------|      |  <-  |  v   |  ->  |      |      |
      * |------+------+------+------+------+------| Play  |    | Mute  |------+------+------+------+------+------|
-     * |      |      |      |      |      |      |-------|    |-------|      |      |      |      |      |LOCK  |
+     * |      | HUE- | SAT- | BRI- | VEL- |      |-------|    |-------|      |      |      |      |      |LOCK  |
      * `-----------------------------------------/       /     \      \-----------------------------------------'
      *
+     * RGB en la mano izquierda: encender/apagar, efecto siguiente/anterior,
+     * y columnas de matiz/saturación/brillo/velocidad (fila 3 sube, fila 4
+     * baja). Los ajustes persisten en la EEPROM emulada del RP2040.
      * ⌃← / ⌃→ cambian de escritorio en macOS. LOCK (⌃⌘Q) bloquea la pantalla.
      * BOOT (posición de BT CLR en ZMK) entra al bootloader RP2040 para flashear.
      */
     [_LOW] = LAYOUT(
         _______, KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,                       KC_F6,   KC_F7,      KC_F8,   KC_F9,      KC_F10,  KC_F11,
-        XXXXXXX, XXXXXXX, XXXXXXX, _______, _______, QK_BOOT,                     _______, C(KC_LEFT), KC_UP,   C(KC_RGHT), _______, KC_F12,
-        _______, _______, _______, _______, _______, _______,                     _______, KC_LEFT,    KC_DOWN, KC_RGHT,    _______, _______,
-        XXXXXXX, _______, _______, _______, _______, _______, KC_MPLY,   KC_MUTE, _______, _______,    _______, _______,    _______, C(G(KC_Q)),
+        UG_TOGG, UG_NEXT, UG_PREV, _______, _______, QK_BOOT,                     _______, C(KC_LEFT), KC_UP,   C(KC_RGHT), _______, KC_F12,
+        _______, UG_HUEU, UG_SATU, UG_VALU, UG_SPDU, _______,                     _______, KC_LEFT,    KC_DOWN, KC_RGHT,    _______, _______,
+        XXXXXXX, UG_HUED, UG_SATD, UG_VALD, UG_SPDD, _______, KC_MPLY,   KC_MUTE, _______, _______,    _______, _______,    _______, C(G(KC_Q)),
                                 _______, _______, _______, _______,    _______, _______, _______, _______
     ),
 };

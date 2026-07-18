@@ -22,10 +22,11 @@ Todo lo demás es idéntico tecla por tecla.
    userspace, quedando `keyboards/lily58/keymaps/allium58/`.
 3. En `qmk.json` del userspace agrega el build:
    ```json
-   { "userspace_version": "1.1", "build_targets": [["lily58/rev1", "allium58"]] }
+   { "userspace_version": "1.0", "build_targets": [["lily58/light", "allium58"]] }
    ```
-4. Haz push: GitHub Actions compila y deja `lily58_rev1_allium58_promicro_rp2040.uf2`
-   como artifact del workflow.
+   (`lily58/light` = mismo Lily58 pero con los 70 LEDs RGB definidos —
+   underglow + por tecla; la matriz es idéntica a `rev1`.)
+4. Haz push: GitHub Actions compila y deja el `.uf2` como artifact del workflow.
 
 ## Opción B — compilar local
 
@@ -34,7 +35,7 @@ brew install qmk/qmk/qmk
 qmk setup            # clona qmk_firmware en ~/qmk_firmware
 mkdir -p ~/qmk_firmware/keyboards/lily58/keymaps
 cp -r lily58/keymaps/allium58 ~/qmk_firmware/keyboards/lily58/keymaps/
-qmk compile -kb lily58/rev1 -km allium58
+qmk compile -kb lily58/light -km allium58
 ```
 
 El `CONVERT_TO = promicro_rp2040` ya está en `rules.mk`, así que la salida es

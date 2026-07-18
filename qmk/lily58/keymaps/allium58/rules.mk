@@ -7,3 +7,4 @@ MOUSEKEY_ENABLE = yes  # MS_BTN4/MS_BTN5 (atrás/adelante) en la capa High
 EXTRAKEY_ENABLE = yes  # play/pause y mute en la capa Low
 OLED_ENABLE = yes      # pantallas: estado en la izquierda, logo en la derecha
 WPM_ENABLE = yes       # contador de palabras por minuto en la OLED izquierda
+RGBLIGHT_ENABLE = yes  # underglow + por tecla (70 LEDs con el target lily58/light)
