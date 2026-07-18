@@ -35,6 +35,7 @@ Reglas críticas que no hay que "corregir":
    keymap -c keymap_drawer.config.yaml draw keymap-drawer/lily58.yaml > keymap-drawer/lily58.svg
    ```
 3. **`trainer/index.html`** — página estática autocontenida para practicar el layout; sus diagramas y pistas replican el keymap a mano y quedan desactualizados si no se tocan.
+4. **`qmk/lily58/keymaps/allium58/`** — port QMK del keymap para el otro Lily58 (cableado, Pro Micro RP2040). Replica capas y macros a mano; ver `qmk/README.md`. El workflow de build ignora `qmk/**`.
 
 ## Shield nice_view_gem (boards/shields/nice_view_gem)
 

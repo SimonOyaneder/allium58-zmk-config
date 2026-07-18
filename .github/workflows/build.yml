@@ -6,11 +6,13 @@ on:
     paths-ignore:
       - "keymap-drawer/**"
       - "keymap_drawer.config.yaml"
+      - "qmk/**"
       - "**/*.md"
   pull_request:
     paths-ignore:
       - "keymap-drawer/**"
       - "keymap_drawer.config.yaml"
+      - "qmk/**"
       - "**/*.md"
   workflow_dispatch:
 
