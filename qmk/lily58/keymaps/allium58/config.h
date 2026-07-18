@@ -13,5 +13,9 @@
  */
 #define OLED_TIMEOUT 1800000
 
+// Sincroniza el WPM a la mitad esclava: el Bongo Cat de la OLED derecha
+// decide sus frames según el WPM.
+#define SPLIT_WPM_ENABLE
+
 // Apaga el RGB cuando el Mac duerme.
 #define RGBLIGHT_SLEEP
