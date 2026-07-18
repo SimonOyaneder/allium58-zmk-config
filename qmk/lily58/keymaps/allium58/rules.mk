@@ -5,3 +5,5 @@ CONVERT_TO = promicro_rp2040
 
 MOUSEKEY_ENABLE = yes  # MS_BTN4/MS_BTN5 (atrás/adelante) en la capa High
 EXTRAKEY_ENABLE = yes  # play/pause y mute en la capa Low
+OLED_ENABLE = yes      # pantallas: estado en la izquierda, logo en la derecha
+WPM_ENABLE = yes       # contador de palabras por minuto en la OLED izquierda
