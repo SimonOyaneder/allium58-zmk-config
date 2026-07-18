@@ -20,18 +20,6 @@ parse_config:
     "&kp DOT": { t: ".", s: ":" }
     "&bspc_qmark": { t: "BACKSPACE", s: "?" }   # mod-morph: Backspace / con Shift → ?
 
-    # ── Hold-tap &hc: tap = la letra, mantener (~0.3s) = ⌘ + la letra ──
-    "&hc LG(Z) Z": { t: "Z", h: "⌘Z" }
-    "&hc LG(X) X": { t: "X", h: "⌘X" }
-    "&hc LG(C) C": { t: "C", h: "⌘C" }
-    "&hc LG(V) V": { t: "V", h: "⌘V" }
-    "&hc LG(A) A": { t: "A", h: "⌘A" }
-    "&hc LG(S) S": { t: "S", h: "⌘S" }
-    "&hc LG(F) F": { t: "F", h: "⌘F" }
-    "&hc LG(T) T": { t: "T", h: "⌘T" }
-    "&hc LG(W) W": { t: "W", h: "⌘W" }
-    "&hc LG(R) R": { t: "R", h: "⌘R" }
-
     # ── High: símbolos de programación vía combos Shift/Option de Mac ES-ISO ──
     "&kp LC(LG(SPACE))": "😀 Emoji"       # selector de emojis de macOS
     "&kp LS(MINUS)": "?"
