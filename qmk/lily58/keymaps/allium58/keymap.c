@@ -53,37 +53,86 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 #include "bongo.h"
 
 /*
- * Pantallas OLED (128x32, 4 líneas de 21 caracteres):
- *   - Mitad izquierda (master): capa activa, modificadores, mayúsculas y WPM.
+ * Pantallas OLED (128x32):
+ *   - Mitad izquierda (master): panel de estado con dos zonas —
+ *       texto (x 0-59): capa como badge invertido, mods C A ^ S que se
+ *       iluminan al presionarlos, MAYUS y el WPM numérico;
+ *       gráfico (x 64-127): curva del WPM, 64 muestras cada 500 ms
+ *       (~32 s de historia) sobre una línea base, estilo nice!view.
  *   - Mitad derecha (esclava): Bongo Cat tamborileando según el WPM
  *     (ver bongo.h; necesita SPLIT_WPM_ENABLE para conocer el WPM).
  * Ambas se apagan solas tras OLED_TIMEOUT sin teclear (30 min, config.h)
  * y despiertan con cualquier pulsación.
  */
 
+#define WPM_GRAPH_X 64
+#define WPM_GRAPH_W 64
+#define WPM_GRAPH_MAX 100   // wpm que toca el techo del gráfico
+#define WPM_SAMPLE_MS 500
+
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     if (!is_keyboard_master()) return OLED_ROTATION_180;
     return rotation;
 }
 
+static void render_wpm_graph(void) {
+    static uint8_t  samples[WPM_GRAPH_W] = {0};
+    static uint8_t  head = 0;
+    static uint32_t sample_timer = 0;
+
+    if (timer_elapsed32(sample_timer) > WPM_SAMPLE_MS) {
+        sample_timer = timer_read32();
+        samples[head] = get_current_wpm();
+        head = (head + 1) % WPM_GRAPH_W;
+    }
+
+    uint8_t prev_y = 31;
+    for (uint8_t i = 0; i < WPM_GRAPH_W; i++) {
+        uint16_t wpm = samples[(head + i) % WPM_GRAPH_W];
+        if (wpm > WPM_GRAPH_MAX) wpm = WPM_GRAPH_MAX;
+        uint8_t y = 31 - (wpm * 31 / WPM_GRAPH_MAX);
+
+        // columna de 32 bits: punto de la curva, unido en vertical con el
+        // punto anterior para que la línea no se corte, más la línea base
+        uint32_t col = (uint32_t)1 << 31;
+        uint8_t y0 = y < prev_y ? y : prev_y;
+        uint8_t y1 = y > prev_y ? y : prev_y;
+        for (uint8_t yy = y0; yy <= y1; yy++) col |= (uint32_t)1 << yy;
+        prev_y = y;
+
+        for (uint8_t page = 0; page < 4; page++) {
+            oled_write_raw_byte((col >> (8 * page)) & 0xFF, page * 128 + WPM_GRAPH_X + i);
+        }
+    }
+}
+
 static void render_status(void) {
-    oled_write_P(PSTR("Capa: "), false);
+    oled_set_cursor(0, 0);
     switch (get_highest_layer(layer_state)) {
-        case _HIGH: oled_write_ln_P(PSTR("High"), false); break;
-        case _LOW:  oled_write_ln_P(PSTR("Low"), false); break;
-        default:    oled_write_ln_P(PSTR("Mac"), false); break;
+        case _HIGH: oled_write_P(PSTR(" High "), true); break;
+        case _LOW:  oled_write_P(PSTR(" Low  "), true); break;
+        default:    oled_write_P(PSTR(" Mac  "), false); break;
     }
 
     uint8_t mods = get_mods() | get_oneshot_mods();
-    oled_write_P(mods & MOD_MASK_GUI ? PSTR("CMD ") : PSTR("    "), false);
-    oled_write_P(mods & MOD_MASK_ALT ? PSTR("OPT ") : PSTR("    "), false);
-    oled_write_P(mods & MOD_MASK_CTRL ? PSTR("CTL ") : PSTR("    "), false);
-    oled_write_ln_P(mods & MOD_MASK_SHIFT ? PSTR("SHFT") : PSTR("    "), false);
+    oled_set_cursor(0, 1);
+    oled_write_P(PSTR("C"), mods & MOD_MASK_GUI);
+    oled_write_P(PSTR(" "), false);
+    oled_write_P(PSTR("A"), mods & MOD_MASK_ALT);
+    oled_write_P(PSTR(" "), false);
+    oled_write_P(PSTR("^"), mods & MOD_MASK_CTRL);
+    oled_write_P(PSTR(" "), false);
+    oled_write_P(PSTR("S"), mods & MOD_MASK_SHIFT);
 
-    oled_write_ln_P(host_keyboard_led_state().caps_lock ? PSTR("MAYUS") : PSTR("     "), false);
+    oled_set_cursor(0, 2);
+    bool caps = host_keyboard_led_state().caps_lock;
+    oled_write_P(caps ? PSTR("MAYUS") : PSTR("     "), caps);
 
-    oled_write_P(PSTR("WPM: "), false);
-    oled_write_ln(get_u8_str(get_current_wpm(), ' '), false);
+    oled_set_cursor(0, 3);
+    oled_write(get_u8_str(get_current_wpm(), ' '), false);
+    oled_write_P(PSTR(" wpm"), false);
+
+    render_wpm_graph();
 }
 
 bool oled_task_user(void) {
