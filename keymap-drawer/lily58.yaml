@@ -15,10 +15,10 @@ layers:
   - {t: '''', s: '?'}
   - TAB
   - Q
-  - {t: W, h: ⌘W}
+  - W
   - E
-  - {t: R, h: ⌘R}
-  - {t: T, h: ⌘T}
+  - R
+  - T
   - Y
   - U
   - I
@@ -26,10 +26,10 @@ layers:
   - P
   - BACKSPACE
   - LEFT CONTROL
-  - {t: A, h: ⌘A}
-  - {t: S, h: ⌘S}
+  - A
+  - S
   - D
-  - {t: F, h: ⌘F}
+  - F
   - G
   - H
   - J
@@ -38,10 +38,10 @@ layers:
   - Ñ
   - {t: ´, s: ¨}
   - LEFT SHIFT
-  - {t: Z, h: ⌘Z}
-  - {t: X, h: ⌘X}
-  - {t: C, h: ⌘C}
-  - {t: V, h: ⌘V}
+  - Z
+  - X
+  - C
+  - V
   - B
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
