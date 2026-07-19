@@ -53,84 +53,86 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 #include "bongo.h"
 
 /*
- * Pantallas OLED (128x32):
- *   - Mitad izquierda (master): panel de estado con dos zonas —
- *       texto (x 0-59): capa como badge invertido, mods C A ^ S que se
- *       iluminan al presionarlos, MAYUS y el WPM numérico;
- *       gráfico (x 64-127): curva del WPM, 64 muestras cada 500 ms
- *       (~32 s de historia) sobre una línea base, estilo nice!view.
- *   - Mitad derecha (esclava): Bongo Cat tamborileando según el WPM
- *     (ver bongo.h; necesita SPLIT_WPM_ENABLE para conocer el WPM).
- * Ambas se apagan solas tras OLED_TIMEOUT sin teclear (30 min, config.h)
- * y despiertan con cualquier pulsación.
+ * Pantallas OLED. En el Lily58 van montadas en vertical (el lado largo
+ * apunta hacia arriba), así que la izquierda se dibuja rotada 270° como
+ * panel vertical de 32x128 px (5 columnas x 16 líneas de texto):
+ *   - badge de capa arriba (invertido en High/Low)
+ *   - mods en grilla: C A / ^ S (se iluminan al presionarlos)
+ *   - MAYUS cuando está activo
+ *   - WPM numérico
+ *   - abajo, gráfico horizontal del WPM: 32 muestras cada 1 s (~32 s de
+ *     historia) deslizando de derecha a izquierda sobre una línea base.
+ * Si en tu montaje la pantalla queda de cabeza, cambia OLED_ROTATION_270
+ * por OLED_ROTATION_90 (y avísame para dejarlo fijo).
+ * La derecha (esclava) mantiene el Bongo Cat apaisado: los frames de la
+ * comunidad están dibujados en 128x32, en la pantalla vertical se ve de
+ * lado, como en todos los Lily58 con este mod.
+ * Ambas se apagan tras OLED_TIMEOUT sin teclear (30 min, config.h).
  */
 
-#define WPM_GRAPH_X 64
-#define WPM_GRAPH_W 64
+#define WPM_GRAPH_TOP 64    // el gráfico ocupa la mitad inferior (y 64-127)
 #define WPM_GRAPH_MAX 100   // wpm que toca el techo del gráfico
-#define WPM_SAMPLE_MS 500
+#define WPM_SAMPLE_MS 1000
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    if (!is_keyboard_master()) return OLED_ROTATION_180;
-    return rotation;
+    if (is_keyboard_master()) return OLED_ROTATION_270;
+    return OLED_ROTATION_180;
 }
 
 static void render_wpm_graph(void) {
-    static uint8_t  samples[WPM_GRAPH_W] = {0};
+    static uint8_t  samples[OLED_DISPLAY_HEIGHT] = {0};   // 32 muestras
     static uint8_t  head = 0;
     static uint32_t sample_timer = 0;
 
     if (timer_elapsed32(sample_timer) > WPM_SAMPLE_MS) {
         sample_timer = timer_read32();
         samples[head] = get_current_wpm();
-        head = (head + 1) % WPM_GRAPH_W;
+        head = (head + 1) % OLED_DISPLAY_HEIGHT;
     }
 
-    uint8_t prev_y = 31;
-    for (uint8_t i = 0; i < WPM_GRAPH_W; i++) {
-        uint16_t wpm = samples[(head + i) % WPM_GRAPH_W];
+    uint8_t prev_cy = 127;
+    for (uint8_t x = 0; x < OLED_DISPLAY_HEIGHT; x++) {
+        uint16_t wpm = samples[(head + x) % OLED_DISPLAY_HEIGHT];
         if (wpm > WPM_GRAPH_MAX) wpm = WPM_GRAPH_MAX;
-        uint8_t y = 31 - (wpm * 31 / WPM_GRAPH_MAX);
+        uint8_t cy = 127 - (wpm * (127 - WPM_GRAPH_TOP) / WPM_GRAPH_MAX);
 
-        // columna de 32 bits: punto de la curva, unido en vertical con el
-        // punto anterior para que la línea no se corte, más la línea base
-        uint32_t col = (uint32_t)1 << 31;
-        uint8_t y0 = y < prev_y ? y : prev_y;
-        uint8_t y1 = y > prev_y ? y : prev_y;
-        for (uint8_t yy = y0; yy <= y1; yy++) col |= (uint32_t)1 << yy;
-        prev_y = y;
-
-        for (uint8_t page = 0; page < 4; page++) {
-            oled_write_raw_byte((col >> (8 * page)) & 0xFF, page * 128 + WPM_GRAPH_X + i);
+        // curva unida en vertical con el punto anterior + línea base;
+        // se redibuja la zona completa, así se borra el frame anterior
+        uint8_t top = cy < prev_cy ? cy : prev_cy;
+        uint8_t bot = cy > prev_cy ? cy : prev_cy;
+        for (uint8_t y = WPM_GRAPH_TOP; y < 128; y++) {
+            oled_write_pixel(x, y, (y >= top && y <= bot) || y == 127);
         }
+        prev_cy = cy;
     }
 }
 
 static void render_status(void) {
     oled_set_cursor(0, 0);
     switch (get_highest_layer(layer_state)) {
-        case _HIGH: oled_write_P(PSTR(" High "), true); break;
-        case _LOW:  oled_write_P(PSTR(" Low  "), true); break;
-        default:    oled_write_P(PSTR(" Mac  "), false); break;
+        case _HIGH: oled_write_P(PSTR("HIGH "), true); break;
+        case _LOW:  oled_write_P(PSTR(" LOW "), true); break;
+        default:    oled_write_P(PSTR(" MAC "), false); break;
     }
 
     uint8_t mods = get_mods() | get_oneshot_mods();
-    oled_set_cursor(0, 1);
+    oled_set_cursor(1, 2);
     oled_write_P(PSTR("C"), mods & MOD_MASK_GUI);
     oled_write_P(PSTR(" "), false);
     oled_write_P(PSTR("A"), mods & MOD_MASK_ALT);
-    oled_write_P(PSTR(" "), false);
+    oled_set_cursor(1, 3);
     oled_write_P(PSTR("^"), mods & MOD_MASK_CTRL);
     oled_write_P(PSTR(" "), false);
     oled_write_P(PSTR("S"), mods & MOD_MASK_SHIFT);
 
-    oled_set_cursor(0, 2);
+    oled_set_cursor(0, 5);
     bool caps = host_keyboard_led_state().caps_lock;
     oled_write_P(caps ? PSTR("MAYUS") : PSTR("     "), caps);
 
-    oled_set_cursor(0, 3);
+    oled_set_cursor(0, 6);
     oled_write(get_u8_str(get_current_wpm(), ' '), false);
-    oled_write_P(PSTR(" wpm"), false);
+    oled_set_cursor(1, 7);
+    oled_write_P(PSTR("wpm"), false);
 
     render_wpm_graph();
 }
