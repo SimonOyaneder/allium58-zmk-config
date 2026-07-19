@@ -44,7 +44,8 @@ static uint32_t luna_jump_timer = 0;  // espacio -> Luna salta (OLED izquierda)
  * estado viaja por una transacción split custom (RPC_ID_SLOT_SYNC, cada
  * 150 ms). Probado en esta placa: las transacciones custom NO la cuelgan
  * (el problema real era solo CAPS_WORD_ENABLE). Cada jugada cuesta 1
- * punto; par +5, trío +50, trío de 7 +777.
+ * punto; par +5, trío +50, trío de 7 +777. Se permite deuda (hasta
+ * -9999) — el casino siempre fía; el marcador se invierte en rojo moral.
  */
 static uint8_t  slot_state = 0;  // 0 sin juego, 1 girando, 2 resultado
 static uint32_t slot_timer = 0;
@@ -59,7 +60,7 @@ typedef struct {
     uint8_t  state;
     uint8_t  reel[3];
     uint8_t  stopped;  // bits 0-2
-    uint16_t points;
+    int16_t  points;   // con signo: la deuda existe
     int16_t  win;
 } slot_sync_t;
 static slot_sync_t slot_rx;          // lo último recibido en la esclava
@@ -77,9 +78,9 @@ static void slot_evaluate(void) {
     if (a == b && b == d)                slot_win = (a == 0) ? 777 : 50;
     else if (a == b || b == d || a == d) slot_win = 5;
     else                                 slot_win = 0;
-    slot_points += slot_win - 1;  // la jugada cuesta 1
-    if (slot_points < 0) slot_points = 0;
-    if (slot_points > 65535) slot_points = 65535;
+    slot_points += slot_win - 1;  // la jugada cuesta 1 (y se puede deber)
+    if (slot_points < -9999) slot_points = -9999;
+    if (slot_points > 32767) slot_points = 32767;
     eeconfig_update_user((uint32_t)slot_points);
     if (slot_win > 0) luna_jump_timer = timer_read32();  // Luna celebra
 }
@@ -116,8 +117,9 @@ static void slot_task_master(void) {
 
 void keyboard_post_init_user(void) {
 #ifdef OLED_ENABLE
-    slot_points = (int32_t)eeconfig_read_user();
-    if (slot_points < 0 || slot_points > 65535) slot_points = 0;  // EEPROM virgen
+    uint32_t raw = eeconfig_read_user();
+    slot_points = (raw == 0xFFFFFFFFu) ? 0 : (int32_t)raw;  // EEPROM virgen
+    if (slot_points < -9999 || slot_points > 32767) slot_points = 0;
     transaction_register_rpc(RPC_ID_SLOT_SYNC, slot_sync_handler);
 #endif
 }
@@ -226,7 +228,7 @@ void housekeeping_task_user(void) {
                 .state   = slot_state,
                 .reel    = {slot_reel[0], slot_reel[1], slot_reel[2]},
                 .stopped = (uint8_t)((slot_stopped[0] ? 1 : 0) | (slot_stopped[1] ? 2 : 0) | (slot_stopped[2] ? 4 : 0)),
-                .points  = (uint16_t)slot_points,
+                .points  = (int16_t)slot_points,
                 .win     = (int16_t)slot_win,
             };
             transaction_rpc_send(RPC_ID_SLOT_SYNC, sizeof(d), &d);
@@ -384,7 +386,26 @@ static void render_slot_right(void) {
     oled_set_cursor(0, 6);
     oled_write_P(PSTR("PTS"), false);
     oled_set_cursor(0, 7);
-    oled_write(get_u16_str(slot_rx.points, ' '), false);
+    // marcador con signo, alineado a la derecha en 5 columnas;
+    // invertido cuando estás en deuda
+    {
+        char     buf[6];
+        bool     neg = slot_rx.points < 0;
+        uint16_t a   = neg ? -slot_rx.points : slot_rx.points;
+        buf[5] = '\0';
+        for (int8_t i = 4; i >= 0; i--) {
+            if (a != 0 || i == 4) {
+                buf[i] = '0' + a % 10;
+                a /= 10;
+            } else if (neg) {
+                buf[i] = '-';
+                neg = false;
+            } else {
+                buf[i] = ' ';
+            }
+        }
+        oled_write(buf, slot_rx.points < 0);
+    }
 
     oled_set_cursor(0, 9);
     if (slot_rx.state == 2) {
