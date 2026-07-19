@@ -134,48 +134,54 @@ void housekeeping_task_user(void) {
  *   - abajo, Luna (luna.h) con reacciones en tiempo real: la master
  *     conoce todas las teclas, así que aquí sí puede saltar con espacio,
  *     ladrar con Shift y agacharse con Ctrl/Alt/Cmd; el resto por WPM.
- * La derecha (esclava): gráfico grande del WPM (lo único que la esclava
- * recibe sin riesgo por el TRRS), 32 muestras cada 2 s ≈ 1 min de
- * historia, con el número arriba.
+ * La derecha (esclava): "Cordillera y luna" (night_art.h), arte 1-bit
+ * hermano del nice!view del Allium58, con estrellas que titilan y los
+ * reflejos del lago desplazándose — es 100% autónomo (nada viaja por el
+ * TRRS) y el movimiento constante evita el burn-in del timeout largo.
  * Si en tu montaje alguna pantalla queda de cabeza, cambia su
  * OLED_ROTATION_270 por OLED_ROTATION_90 (y avísame para dejarlo fijo).
  * Ambas se apagan tras OLED_TIMEOUT sin teclear (30 min, config.h).
  */
 
-#define WPM_GRAPH_TOP 24    // el gráfico parte bajo el número (y 24-127)
-#define WPM_GRAPH_MAX 100   // wpm que toca el techo del gráfico
-#define WPM_SAMPLE_MS 2000
+#include "night_art.h"
+
 #define LUNA_JUMP_MS 250    // cuánto dura el salto tras presionar espacio
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     return OLED_ROTATION_270;
 }
 
-static void render_wpm_graph(void) {
-    static uint8_t  samples[OLED_DISPLAY_HEIGHT] = {0};   // 32 muestras
-    static uint8_t  head = 0;
-    static uint32_t sample_timer = 0;
+/*
+ * Noche animada: el frame base se dibuja una vez; cada tick solo se
+ * retocan las estrellas (titilan con un pseudo-aleatorio determinista)
+ * y las franjas de reflejo del lago (se desplazan, filas alternadas en
+ * direcciones opuestas para que parezca agua).
+ */
+static void render_night(void) {
+    static uint32_t tick_timer = 0;
+    static uint8_t  tick = 0;
+    static bool     base_drawn = false;
 
-    if (timer_elapsed32(sample_timer) > WPM_SAMPLE_MS) {
-        sample_timer = timer_read32();
-        samples[head] = get_current_wpm();
-        head = (head + 1) % OLED_DISPLAY_HEIGHT;
+    if (!base_drawn) {
+        oled_set_cursor(0, 0);
+        oled_write_raw_P(night_base, sizeof(night_base));
+        base_drawn = true;
+    }
+    if (timer_elapsed32(tick_timer) < NIGHT_TICK_MS) return;
+    tick_timer = timer_read32();
+    tick++;
+
+    for (uint8_t i = 0; i < NIGHT_STAR_COUNT; i++) {
+        bool on = ((tick * 31u + i * 17u) % 7u) < 5u;
+        oled_write_pixel(night_stars[i][0], night_stars[i][1], on);
     }
 
-    uint8_t prev_cy = 127;
-    for (uint8_t x = 0; x < OLED_DISPLAY_HEIGHT; x++) {
-        uint16_t wpm = samples[(head + x) % OLED_DISPLAY_HEIGHT];
-        if (wpm > WPM_GRAPH_MAX) wpm = WPM_GRAPH_MAX;
-        uint8_t cy = 127 - (wpm * (127 - WPM_GRAPH_TOP) / WPM_GRAPH_MAX);
-
-        // curva unida en vertical con el punto anterior + línea base;
-        // se redibuja la zona completa, así se borra el frame anterior
-        uint8_t top = cy < prev_cy ? cy : prev_cy;
-        uint8_t bot = cy > prev_cy ? cy : prev_cy;
-        for (uint8_t y = WPM_GRAPH_TOP; y < 128; y++) {
-            oled_write_pixel(x, y, (y >= top && y <= bot) || y == 127);
+    for (uint8_t b = 0; b < NIGHT_BAND_COUNT; b++) {
+        uint8_t y  = night_bands[b][0];
+        uint8_t ph = (y & 1) ? tick : (uint8_t)(0u - tick);
+        for (uint8_t x = night_bands[b][1]; x < night_bands[b][2]; x++) {
+            oled_write_pixel(x, y, ((x + ph) & 3) < 2);
         }
-        prev_cy = cy;
     }
 }
 
@@ -241,19 +247,12 @@ static void render_status(void) {
     render_luna_master();
 }
 
-static void render_wpm_panel(void) {
-    oled_set_cursor(1, 0);
-    oled_write_P(PSTR("WPM"), false);
-    oled_set_cursor(1, 1);
-    oled_write(get_u8_str(get_current_wpm(), ' '), false);
-    render_wpm_graph();
-}
 
 bool oled_task_user(void) {
     if (is_keyboard_master()) {
         render_status();
     } else {
-        render_wpm_panel();
+        render_night();
     }
     return false;
 }
