@@ -1,4 +1,5 @@
 #include QMK_KEYBOARD_H
+#include <stdio.h>
 
 /*
  * Port a QMK del keymap ZMK del Allium58 (config/lily58.keymap), para el
@@ -58,7 +59,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
  * panel vertical de 32x128 px (5 columnas x 16 líneas de texto):
  *   - badge de capa arriba (invertido en High/Low)
  *   - mods en grilla: C A / ^ S (se iluminan al presionarlos)
- *   - MAYUS cuando está activo
+ *   - cronómetro de sesión h:mm (el teclado no tiene reloj real; esto es
+ *     tiempo desde que se conectó)
  *   - WPM numérico
  *   - abajo, gráfico horizontal del WPM: 32 muestras cada 1 s (~32 s de
  *     historia) deslizando de derecha a izquierda sobre una línea base.
@@ -126,8 +128,10 @@ static void render_status(void) {
     oled_write_P(PSTR("S"), mods & MOD_MASK_SHIFT);
 
     oled_set_cursor(0, 5);
-    bool caps = host_keyboard_led_state().caps_lock;
-    oled_write_P(caps ? PSTR("MAYUS") : PSTR("     "), caps);
+    uint32_t mins = timer_read32() / 60000;
+    char up[6];
+    snprintf(up, sizeof(up), "%2u:%02u", (uint8_t)(mins / 60), (uint8_t)(mins % 60));
+    oled_write(up, false);
 
     oled_set_cursor(0, 6);
     oled_write(get_u8_str(get_current_wpm(), ' '), false);
