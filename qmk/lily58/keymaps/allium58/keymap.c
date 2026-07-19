@@ -43,9 +43,12 @@ static uint32_t luna_jump_timer = 0;  // espacio -> Luna salta (OLED izquierda)
  * puntos en EEPROM) y el juego se DIBUJA en la pantalla derecha: el
  * estado viaja por una transacción split custom (RPC_ID_SLOT_SYNC, cada
  * 150 ms). Probado en esta placa: las transacciones custom NO la cuelgan
- * (el problema real era solo CAPS_WORD_ENABLE). Cada jugada cuesta 1
- * punto; par +5, trío +50, trío de 7 +777. Se permite deuda (hasta
- * -9999) — el casino siempre fía; el marcador se invierte en rojo moral.
+ * (el problema real era solo CAPS_WORD_ENABLE).
+ * Matemática de casino: 8 símbolos, la jugada cuesta 5. Par = devuelve
+ * los 5 (33% de las veces), trío +100 (1.4%), trío de 7 +777 (0.2%).
+ * Esperanza por jugada ≈ -0.5: la casa tiene ~9% de ventaja, como todo
+ * casino digno. Se permite deuda (hasta -9999) — el casino siempre fía;
+ * el marcador se invierte cuando estás en rojo.
  */
 static uint8_t  slot_state = 0;  // 0 sin juego, 1 girando, 2 resultado
 static uint32_t slot_timer = 0;
@@ -75,10 +78,10 @@ static void slot_sync_handler(uint8_t in_buflen, const void* in_data, uint8_t ou
 
 static void slot_evaluate(void) {
     uint8_t a = slot_reel[0], b = slot_reel[1], d = slot_reel[2];
-    if (a == b && b == d)                slot_win = (a == 0) ? 777 : 50;
-    else if (a == b || b == d || a == d) slot_win = 5;
+    if (a == b && b == d)                slot_win = (a == 0) ? 777 : 100;
+    else if (a == b || b == d || a == d) slot_win = 5;   // par: recuperas la apuesta
     else                                 slot_win = 0;
-    slot_points += slot_win - 1;  // la jugada cuesta 1 (y se puede deber)
+    slot_points += slot_win - 5;  // la jugada cuesta 5 (y se puede deber)
     if (slot_points < -9999) slot_points = -9999;
     if (slot_points > 32767) slot_points = 32767;
     eeconfig_update_user((uint32_t)slot_points);
@@ -93,7 +96,7 @@ static void slot_task_master(void) {
             for (uint8_t i = 0; i < 3; i++) {
                 if (!slot_stopped[i]) {
                     slot_rng = slot_rng * 1103515245u + 12345u;
-                    slot_reel[i] = (slot_rng >> 16) % 5;
+                    slot_reel[i] = (slot_rng >> 16) % 8;
                 }
             }
         }
@@ -376,7 +379,7 @@ static void render_slot_right(void) {
     oled_set_cursor(0, 3);
     oled_write_P(PSTR("|"), false);
     for (uint8_t i = 0; i < 3; i++) {
-        char s[2] = {"7$*#O"[slot_rx.reel[i] % 5], 0};
+        char s[2] = {"7$*#OX%&"[slot_rx.reel[i] % 8], 0};
         oled_write(s, !(slot_rx.stopped & (1 << i)));  // invertido mientras gira
     }
     oled_write_P(PSTR("|"), false);
@@ -409,10 +412,10 @@ static void render_slot_right(void) {
 
     oled_set_cursor(0, 9);
     if (slot_rx.state == 2) {
-        if (slot_rx.win >= 777)     oled_write_P(PSTR("777!!"), true);
-        else if (slot_rx.win >= 50) oled_write_P(PSTR("+50! "), true);
-        else if (slot_rx.win > 0)   oled_write_P(PSTR("+5   "), false);
-        else                        oled_write_P(PSTR("nada "), false);
+        if (slot_rx.win >= 777)      oled_write_P(PSTR("777!!"), true);
+        else if (slot_rx.win >= 100) oled_write_P(PSTR("+100!"), true);
+        else if (slot_rx.win > 0)    oled_write_P(PSTR("par  "), false);
+        else                         oled_write_P(PSTR("nada "), false);
     } else {
         oled_write_P(PSTR("     "), false);
     }
