@@ -7,5 +7,6 @@ MOUSEKEY_ENABLE = yes  # MS_BTN4/MS_BTN5 (atrás/adelante) en la capa High
 EXTRAKEY_ENABLE = yes  # play/pause y mute en la capa Low
 OLED_ENABLE = yes      # pantallas: estado en la izquierda, Luna en la derecha
 WPM_ENABLE = yes       # contador de palabras por minuto (panel y Luna)
-CAPS_WORD_ENABLE = yes # doble Shift = mayúsculas por una palabra
+# CAPS_WORD_ENABLE: NO activar — cuelga la esclava por TRRS en esta placa.
+# El caps word (doble Shift) está hecho a mano en keymap.c.
 RGBLIGHT_ENABLE = yes  # underglow + por tecla (70 LEDs con el target lily58/light)

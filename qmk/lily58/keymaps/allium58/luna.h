@@ -5,15 +5,15 @@
  * fork de qmk_firmware), via la adaptacion de louckousse/keymaps (kyria),
  * basada a su vez en filterpaper. Frames de 32 px de ancho en 3 filas de
  * 32 bytes: calzan exactos con la pantalla vertical (32x128, rot. 270).
- * Corre abajo en la OLED derecha (esclava):
- *   - sentada: sin escribir        - camina: WPM > LUNA_MIN_WALK
- *   - corre: WPM > LUNA_MIN_RUN    - ladra: Shift presionado
- *   - se agacha: Ctrl/Alt/Cmd
- * WPM y mods llegan a la esclava con SPLIT_WPM_ENABLE y SPLIT_MODS_ENABLE.
+ * Corre abajo en la OLED derecha (esclava). Todos los estados son por WPM
+ * (sincronizado con SPLIT_WPM_ENABLE; los mods NO se sincronizan porque
+ * SPLIT_MODS_ENABLE cuelga la esclava en esta placa):
+ *   0 wpm: sentada / <=10: sigilosa / <=40: camina / <70: corre / >=70: ladra
  */
 
 #define LUNA_MIN_WALK 10
 #define LUNA_MIN_RUN 40
+#define LUNA_BARK_WPM 70
 #define LUNA_FRAMES 2
 #define LUNA_CHUNK 32              // bytes por fila del sprite (32 px)
 #define LUNA_FRAME_DURATION 200
@@ -129,11 +129,10 @@ static void render_luna(void) {
     anim_timer = timer_read32();
     frame = (frame + 1) % LUNA_FRAMES;
 
-    uint8_t mods = get_mods();
-    uint8_t wpm  = get_current_wpm();
-    if (mods & MOD_MASK_SHIFT)        luna_draw(luna_bark, frame);
-    else if (mods & MOD_MASK_CAG)     luna_draw(luna_sneak, frame);
-    else if (wpm <= LUNA_MIN_WALK)    luna_draw(luna_sit, frame);
+    uint8_t wpm = get_current_wpm();
+    if (wpm == 0)                     luna_draw(luna_sit, frame);
+    else if (wpm <= LUNA_MIN_WALK)    luna_draw(luna_sneak, frame);
     else if (wpm <= LUNA_MIN_RUN)     luna_draw(luna_walk, frame);
-    else                              luna_draw(luna_run, frame);
+    else if (wpm < LUNA_BARK_WPM)     luna_draw(luna_run, frame);
+    else                              luna_draw(luna_bark, frame);
 }

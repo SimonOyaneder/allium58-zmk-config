@@ -13,16 +13,12 @@
  */
 #define OLED_TIMEOUT 1800000
 
-// Sincroniza WPM y modificadores a la mitad esclava: Luna (OLED derecha)
-// decide sus frames según el WPM y reacciona a Shift/Ctrl/Alt/Cmd.
+// Sincroniza el WPM a la mitad esclava: Luna (OLED derecha) decide sus
+// frames según el WPM.
+// OJO: NO agregar SPLIT_MODS_ENABLE ni CAPS_WORD_ENABLE — en esta placa
+// cuelgan la mitad esclava al arrancar por TRRS (verificado por bisección;
+// el "caps word" está implementado a mano en keymap.c, solo en la master).
 #define SPLIT_WPM_ENABLE
-#define SPLIT_MODS_ENABLE
-
-// Caps Word: mayúsculas por una palabra. Se activa con doble toque de
-// Shift izquierdo o presionando ambos Shift a la vez; se apaga solo al
-// terminar la palabra (espacio o cualquier tecla no alfanumérica).
-#define DOUBLE_TAP_SHIFT_TURNS_ON_CAPS_WORD
-#define BOTH_SHIFTS_TURNS_ON_CAPS_WORD
 
 // Apaga el RGB cuando el Mac duerme.
 #define RGBLIGHT_SLEEP

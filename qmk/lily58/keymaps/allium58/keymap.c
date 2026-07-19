@@ -29,7 +29,10 @@ enum custom_keycodes {
     ES_CARET,
 };
 
+static void cwl_process(uint16_t keycode, keyrecord_t *record);
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    cwl_process(keycode, record);
     switch (keycode) {
         case ES_GRAVE:
             if (record->event.pressed) {
@@ -49,24 +52,61 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 /*
- * Caps Word adaptado a ES-ISO: además de las letras hay que mantener en
- * mayúscula la Ñ (KC_SCLN), y dejar pasar sin apagarlo la tecla muerta de
- * acento (KC_QUOT, para Á É Í Ó Ú) y el guión (KC_SLSH en ES-ISO).
+ * "Caps word" casero: mayúsculas por una palabra, activado con doble toque
+ * de Shift (izquierdo o derecho). NO usar CAPS_WORD_ENABLE de QMK: en esta
+ * placa cuelga la mitad esclava al arrancar conectada por TRRS (verificado
+ * por bisección de builds — la feature toca la sincronización split).
+ * Esta versión corre 100% en la master y está adaptada a ES-ISO: pone en
+ * mayúscula letras y Ñ (KC_SCLN), y no se corta con la tecla muerta de
+ * acento (KC_QUOT), el guión (KC_SLSH), números ni Backspace.
  */
-bool caps_word_press_user(uint16_t keycode) {
+#define CWL_TAP_TERM 300      // ventana del doble toque de Shift (ms)
+#define CWL_IDLE_TIMEOUT 5000 // se apaga solo tras 5 s sin teclear
+
+static bool     cwl_active = false;
+static bool     cwl_shift_solo = false; // el Shift actual no acompañó a otra tecla
+static uint16_t cwl_last_tap = 0;
+static uint16_t cwl_activity = 0;
+
+static void cwl_process(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
-        case KC_A ... KC_Z:
-        case KC_SCLN:  // Ñ
-            add_weak_mods(MOD_BIT(KC_LSFT));
-            return true;
-        case KC_1 ... KC_0:
-        case KC_QUOT:  // ´ (tecla muerta: acentos)
-        case KC_SLSH:  // - (guión en ES-ISO)
-        case KC_BSPC:
-        case KC_DEL:
-            return true;
+        case KC_LSFT:
+        case KC_RSFT:
+            if (record->event.pressed) {
+                cwl_shift_solo = true;
+            } else if (cwl_shift_solo) {
+                if (timer_elapsed(cwl_last_tap) < CWL_TAP_TERM) {
+                    cwl_active   = true;
+                    cwl_activity = timer_read();
+                }
+                cwl_last_tap = timer_read();
+            }
+            return;
         default:
-            return false;  // cualquier otra tecla termina Caps Word
+            if (!record->event.pressed) return;
+            cwl_shift_solo = false;
+            if (!cwl_active) return;
+            cwl_activity = timer_read();
+            switch (keycode) {
+                case KC_A ... KC_Z:
+                case KC_SCLN:  // Ñ
+                    add_weak_mods(MOD_BIT(KC_LSFT));
+                    break;
+                case KC_1 ... KC_0:
+                case KC_QUOT:  // ´ (tecla muerta: acentos)
+                case KC_SLSH:  // - (guión en ES-ISO)
+                case KC_BSPC:
+                case KC_DEL:
+                    break;
+                default:
+                    cwl_active = false;  // fin de la palabra
+            }
+    }
+}
+
+void housekeeping_task_user(void) {
+    if (cwl_active && timer_elapsed(cwl_activity) > CWL_IDLE_TIMEOUT) {
+        cwl_active = false;
     }
 }
 
@@ -148,8 +188,7 @@ static void render_status(void) {
     oled_write_P(PSTR("S"), mods & MOD_MASK_SHIFT);
 
     oled_set_cursor(0, 5);
-    bool cw = is_caps_word_on();
-    oled_write_P(cw ? PSTR("CAPS ") : PSTR("     "), cw);
+    oled_write_P(cwl_active ? PSTR("CAPS ") : PSTR("     "), cwl_active);
 
     oled_set_cursor(0, 6);
     oled_write(get_u8_str(get_current_wpm(), ' '), false);
