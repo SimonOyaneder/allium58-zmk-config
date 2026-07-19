@@ -1,6 +1,7 @@
 #include QMK_KEYBOARD_H
 #include "transactions.h"
 #include <string.h>
+#include <math.h>
 
 /*
  * Port a QMK del keymap ZMK del Allium58 (config/lily58.keymap), para el
@@ -370,8 +371,85 @@ static void render_status(void) {
 }
 
 
+/*
+ * Feedback animado en la parte baja del casino (y 88-127):
+ *   girando  -> puntos de suspenso
+ *   trío     -> estallido + lluvia de monedas
+ *   par      -> una moneda solitaria rebotando (recuperaste la apuesta)
+ *   nada     -> tumbleweed rodando por el desierto
+ */
+static void render_slot_feedback(uint32_t t) {
+    uint8_t frame = t / 120;
+
+    for (uint8_t y = 88; y < 128; y++) {  // limpia la zona
+        for (uint8_t x = 0; x < 32; x++) {
+            oled_write_pixel(x, y, false);
+        }
+    }
+
+    if (slot_rx.state == 1) {  // suspenso: tres puntos que se encienden
+        for (uint8_t i = 0; i < 3; i++) {
+            if ((frame % 4) > i) {
+                oled_write_pixel(12 + i * 4, 106, true);
+                oled_write_pixel(13 + i * 4, 106, true);
+                oled_write_pixel(12 + i * 4, 107, true);
+                oled_write_pixel(13 + i * 4, 107, true);
+            }
+        }
+        return;
+    }
+
+    if (slot_rx.win >= 100) {  // trío: estallido + lluvia de monedas
+        if (t < 600) {
+            uint8_t r = 1 + t / 60;
+            for (uint8_t a = 0; a < 24; a++) {
+                float ang = a * 6.2832f / 24;
+                oled_write_pixel((uint8_t)(16 + r * cosf(ang)), (uint8_t)(104 + r * sinf(ang)), true);
+            }
+        }
+        for (uint8_t k = 0; k < 7; k++) {
+            uint8_t cx = (k * 13 + 5) % 30 + 1;
+            uint8_t cy = 88 + ((frame * (2 + k % 3) + k * 11) % 40);
+            oled_write_pixel(cx, cy, true);
+            oled_write_pixel(cx - 1, cy, true);
+            oled_write_pixel(cx + 1, cy, true);
+            oled_write_pixel(cx, cy - 1, true);
+            oled_write_pixel(cx, cy + 1, true);
+        }
+    } else if (slot_rx.win > 0) {  // par: moneda rebotando
+        uint8_t b = frame % 8;
+        uint8_t bounce = b < 4 ? b : 8 - b;
+        uint8_t cy = 108 - bounce * 3;
+        for (int8_t dy = -2; dy <= 2; dy++) {
+            for (int8_t dx = -2; dx <= 2; dx++) {
+                if (dx * dx + dy * dy <= 5) oled_write_pixel(16 + dx, cy + dy, true);
+            }
+        }
+        oled_write_pixel(16, cy, false);  // brillo de la moneda
+        for (uint8_t x = 12; x <= 20; x++) oled_write_pixel(x, 114, true);  // piso
+    } else {  // nada: tumbleweed
+        int16_t cx = (int16_t)((frame * 3) % 44) - 6;
+        uint8_t cy = 107 + (frame % 2);
+        for (uint8_t a = 0; a < 12; a++) {
+            float ang = a * 6.2832f / 12 + frame * 0.6f;
+            oled_write_pixel((uint8_t)(cx + 4 * cosf(ang)), (uint8_t)(cy + 4 * sinf(ang)), true);
+            if (a % 3 == 0) {
+                oled_write_pixel((uint8_t)(cx + 2 * cosf(ang)), (uint8_t)(cy + 2 * sinf(ang)), true);
+            }
+        }
+        for (uint8_t x = 0; x < 32; x += 3) oled_write_pixel(x, 114, true);  // piso
+    }
+}
+
 // El casino en la pantalla derecha: dibuja lo que llegó por el sync
 static void render_slot_right(void) {
+    static uint8_t  fb_prev = 0xFF;
+    static uint32_t fb_timer = 0;
+    if (slot_rx.state != fb_prev) {  // reinicia la animación al cambiar de fase
+        fb_prev  = slot_rx.state;
+        fb_timer = timer_read32();
+    }
+
     oled_set_cursor(0, 0);
     oled_write_P(PSTR("SLOT "), true);
     oled_set_cursor(0, 2);
@@ -419,6 +497,8 @@ static void render_slot_right(void) {
     } else {
         oled_write_P(PSTR("     "), false);
     }
+
+    render_slot_feedback(timer_elapsed32(fb_timer));
 }
 
 bool oled_task_user(void) {
