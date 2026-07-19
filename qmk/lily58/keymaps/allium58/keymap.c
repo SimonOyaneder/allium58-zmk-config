@@ -27,13 +27,37 @@ enum custom_keycodes {
     // para obtener el carácter suelto (macros &es_grave / &es_caret en ZMK).
     ES_GRAVE = SAFE_RANGE,
     ES_CARET,
+    // Palanca del tragamonedas (tecla interior derecha, sobre el pulgar).
+    SLOT_SPIN,
 };
 
 static void cwl_process(uint16_t keycode, keyrecord_t *record);
 
 #ifdef OLED_ENABLE
 static uint32_t luna_jump_timer = 0;  // espacio -> Luna salta (OLED izquierda)
+
+/*
+ * Tragamonedas 🎰 (pantalla izquierda; la derecha no ve teclas por la
+ * restricción split de esta placa). La palanca es SLOT_SPIN. Cada jugada
+ * cuesta 1 punto; par +5, trío +50, trío de 7 +777. Los puntos persisten
+ * en la EEPROM emulada (se escriben solo al terminar cada jugada).
+ */
+static uint8_t  slot_state = 0;  // 0 panel normal, 1 girando, 2 resultado
+static uint32_t slot_timer = 0;
+static uint32_t slot_step  = 0;
+static uint8_t  slot_reel[3];
+static bool     slot_stopped[3];
+static int32_t  slot_points = 0;
+static int32_t  slot_win = 0;
+static uint32_t slot_rng = 12345;
 #endif
+
+void keyboard_post_init_user(void) {
+#ifdef OLED_ENABLE
+    slot_points = (int32_t)eeconfig_read_user();
+    if (slot_points < 0 || slot_points > 65535) slot_points = 0;  // EEPROM virgen
+#endif
+}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     cwl_process(keycode, record);
@@ -55,6 +79,19 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 tap_code16(S(KC_LBRC));
                 tap_code(KC_SPC);
             }
+            return false;
+
+        case SLOT_SPIN:
+#ifdef OLED_ENABLE
+            if (record->event.pressed && slot_state != 1) {
+                slot_rng ^= timer_read32();  // entropía del momento del tirón
+                slot_state = 1;
+                slot_timer = timer_read32();
+                slot_step  = timer_read32();
+                for (uint8_t i = 0; i < 3; i++) slot_stopped[i] = false;
+                oled_clear();
+            }
+#endif
             return false;
     }
     return true;
@@ -248,9 +285,88 @@ static void render_status(void) {
 }
 
 
+static const char slot_syms[] = {'7', '$', '*', '#', 'O'};
+
+static void slot_evaluate(void) {
+    uint8_t a = slot_reel[0], b = slot_reel[1], d = slot_reel[2];
+    if (a == b && b == d)                       slot_win = (a == 0) ? 777 : 50;
+    else if (a == b || b == d || a == d)        slot_win = 5;
+    else                                        slot_win = 0;
+    slot_points += slot_win - 1;  // la jugada cuesta 1
+    if (slot_points < 0) slot_points = 0;
+    if (slot_points > 65535) slot_points = 65535;
+    eeconfig_update_user((uint32_t)slot_points);
+    if (slot_win > 0) luna_jump_timer = timer_read32();  // Luna celebra
+}
+
+static void render_slot(void) {
+    if (slot_state == 1) {
+        if (timer_elapsed32(slot_step) > 90) {
+            slot_step = timer_read32();
+            for (uint8_t i = 0; i < 3; i++) {
+                if (!slot_stopped[i]) {
+                    slot_rng = slot_rng * 1103515245u + 12345u;
+                    slot_reel[i] = (slot_rng >> 16) % 5;
+                }
+            }
+        }
+        static const uint16_t stop_at[3] = {900, 1500, 2100};
+        uint32_t el = timer_elapsed32(slot_timer);
+        bool all = true;
+        for (uint8_t i = 0; i < 3; i++) {
+            if (el >= stop_at[i]) slot_stopped[i] = true;
+            if (!slot_stopped[i]) all = false;
+        }
+        if (all) {
+            slot_state = 2;
+            slot_timer = timer_read32();
+            slot_evaluate();
+        }
+    } else if (slot_state == 2 && timer_elapsed32(slot_timer) > 5000) {
+        slot_state = 0;  // vuelve al panel normal
+        oled_clear();
+        return;
+    }
+
+    oled_set_cursor(0, 0);
+    oled_write_P(PSTR("SLOT "), true);
+    oled_set_cursor(0, 2);
+    oled_write_P(PSTR("+---+"), false);
+    oled_set_cursor(0, 3);
+    oled_write_P(PSTR("|"), false);
+    for (uint8_t i = 0; i < 3; i++) {
+        char s[2] = {slot_syms[slot_reel[i]], 0};
+        oled_write(s, !slot_stopped[i]);  // invertido mientras gira
+    }
+    oled_write_P(PSTR("|"), false);
+    oled_set_cursor(0, 4);
+    oled_write_P(PSTR("+---+"), false);
+
+    oled_set_cursor(0, 6);
+    oled_write_P(PSTR("PTS"), false);
+    oled_set_cursor(0, 7);
+    oled_write(get_u16_str((uint16_t)slot_points, ' '), false);
+
+    oled_set_cursor(0, 9);
+    if (slot_state == 2) {
+        if (slot_win >= 777)     oled_write_P(PSTR("777!!"), true);
+        else if (slot_win >= 50) oled_write_P(PSTR("+50! "), true);
+        else if (slot_win > 0)   oled_write_P(PSTR("+5   "), false);
+        else                     oled_write_P(PSTR("nada "), false);
+    } else {
+        oled_write_P(PSTR("     "), false);
+    }
+
+    render_luna_master();  // Luna sigue abajo (y salta si ganaste)
+}
+
 bool oled_task_user(void) {
     if (is_keyboard_master()) {
-        render_status();
+        if (slot_state) {
+            render_slot();
+        } else {
+            render_status();
+        }
     } else {
         render_night();
     }
@@ -273,12 +389,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * `-----------------------------------------/       /     \      \-----------------------------------------'
      *                   | LAlt | HIGH | LCmd | /Space  /       \Space \  |Enter | LOW  | RAlt |
      *                   `----------------------------'           '------''--------------------'
+     *
+     * La tecla interior derecha (sobre el pulgar, antes muerta) es la
+     * palanca del tragamonedas 🎰: cada toque hace girar los rodillos en
+     * la pantalla izquierda.
      */
     [_MAC] = LAYOUT(
         KC_ESC,  KC_1, KC_2, KC_3, KC_4, KC_5,                        KC_6, KC_7, KC_8,    KC_9,   KC_0,    KC_MINS,
         KC_TAB,  KC_Q, KC_W, KC_E, KC_R, KC_T,                        KC_Y, KC_U, KC_I,    KC_O,   KC_P,    KC_BSPC,
         KC_LCTL, KC_A, KC_S, KC_D, KC_F, KC_G,                        KC_H, KC_J, KC_K,    KC_L,   KC_SCLN, KC_QUOT,
-        KC_LSFT, KC_Z, KC_X, KC_C, KC_V, KC_B, XXXXXXX,     XXXXXXX, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_RSFT,
+        KC_LSFT, KC_Z, KC_X, KC_C, KC_V, KC_B, XXXXXXX,     SLOT_SPIN, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_RSFT,
                    KC_LALT, MO(_HIGH), KC_LGUI, KC_SPC,     KC_SPC, KC_ENT, MO(_LOW), KC_RALT
     ),
 

@@ -119,7 +119,7 @@ with open(os.path.join(here, "night_art.h"), "w") as f:
     f.write("#pragma once\n\n")
     f.write("/*\n * Generado por generate_night_art.py — no editar a mano.\n")
     f.write(" * \"Cordillera y luna\" 32x128 + listas de animación.\n */\n\n")
-    f.write("#define NIGHT_TICK_MS 400\n")
+    f.write("#define NIGHT_TICK_MS 800\n")
     f.write("#define NIGHT_STAR_COUNT %d\n" % len(TWINKLE))
     f.write("#define NIGHT_BAND_COUNT %d\n\n" % len(BANDS))
     f.write("static const char PROGMEM night_base[512] = {\n")
