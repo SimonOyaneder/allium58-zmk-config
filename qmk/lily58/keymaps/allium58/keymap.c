@@ -1,4 +1,6 @@
 #include QMK_KEYBOARD_H
+#include "transactions.h"
+#include <string.h>
 
 /*
  * Port a QMK del keymap ZMK del Allium58 (config/lily58.keymap), para el
@@ -37,12 +39,14 @@ static void cwl_process(uint16_t keycode, keyrecord_t *record);
 static uint32_t luna_jump_timer = 0;  // espacio -> Luna salta (OLED izquierda)
 
 /*
- * Tragamonedas 🎰 (pantalla izquierda; la derecha no ve teclas por la
- * restricción split de esta placa). La palanca es SLOT_SPIN. Cada jugada
- * cuesta 1 punto; par +5, trío +50, trío de 7 +777. Los puntos persisten
- * en la EEPROM emulada (se escriben solo al terminar cada jugada).
+ * Tragamonedas 🎰 — la lógica corre en la master (palanca SLOT_SPIN,
+ * puntos en EEPROM) y el juego se DIBUJA en la pantalla derecha: el
+ * estado viaja por una transacción split custom (RPC_ID_SLOT_SYNC, cada
+ * 150 ms). Probado en esta placa: las transacciones custom NO la cuelgan
+ * (el problema real era solo CAPS_WORD_ENABLE). Cada jugada cuesta 1
+ * punto; par +5, trío +50, trío de 7 +777.
  */
-static uint8_t  slot_state = 0;  // 0 panel normal, 1 girando, 2 resultado
+static uint8_t  slot_state = 0;  // 0 sin juego, 1 girando, 2 resultado
 static uint32_t slot_timer = 0;
 static uint32_t slot_step  = 0;
 static uint8_t  slot_reel[3];
@@ -50,12 +54,71 @@ static bool     slot_stopped[3];
 static int32_t  slot_points = 0;
 static int32_t  slot_win = 0;
 static uint32_t slot_rng = 12345;
+
+typedef struct {
+    uint8_t  state;
+    uint8_t  reel[3];
+    uint8_t  stopped;  // bits 0-2
+    uint16_t points;
+    int16_t  win;
+} slot_sync_t;
+static slot_sync_t slot_rx;          // lo último recibido en la esclava
+static uint32_t    slot_rx_time = 0;
+
+static void slot_sync_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
+    if (in_buflen == sizeof(slot_sync_t)) {
+        memcpy(&slot_rx, in_data, sizeof(slot_sync_t));
+        slot_rx_time = timer_read32();
+    }
+}
+
+static void slot_evaluate(void) {
+    uint8_t a = slot_reel[0], b = slot_reel[1], d = slot_reel[2];
+    if (a == b && b == d)                slot_win = (a == 0) ? 777 : 50;
+    else if (a == b || b == d || a == d) slot_win = 5;
+    else                                 slot_win = 0;
+    slot_points += slot_win - 1;  // la jugada cuesta 1
+    if (slot_points < 0) slot_points = 0;
+    if (slot_points > 65535) slot_points = 65535;
+    eeconfig_update_user((uint32_t)slot_points);
+    if (slot_win > 0) luna_jump_timer = timer_read32();  // Luna celebra
+}
+
+// Avanza el juego (solo master, desde housekeeping)
+static void slot_task_master(void) {
+    if (slot_state == 1) {
+        if (timer_elapsed32(slot_step) > 90) {
+            slot_step = timer_read32();
+            for (uint8_t i = 0; i < 3; i++) {
+                if (!slot_stopped[i]) {
+                    slot_rng = slot_rng * 1103515245u + 12345u;
+                    slot_reel[i] = (slot_rng >> 16) % 5;
+                }
+            }
+        }
+        static const uint16_t stop_at[3] = {900, 1500, 2100};
+        uint32_t el = timer_elapsed32(slot_timer);
+        bool all = true;
+        for (uint8_t i = 0; i < 3; i++) {
+            if (el >= stop_at[i]) slot_stopped[i] = true;
+            if (!slot_stopped[i]) all = false;
+        }
+        if (all) {
+            slot_state = 2;
+            slot_timer = timer_read32();
+            slot_evaluate();
+        }
+    } else if (slot_state == 2 && timer_elapsed32(slot_timer) > 5000) {
+        slot_state = 0;  // la derecha vuelve a la noche
+    }
+}
 #endif
 
 void keyboard_post_init_user(void) {
 #ifdef OLED_ENABLE
     slot_points = (int32_t)eeconfig_read_user();
     if (slot_points < 0 || slot_points > 65535) slot_points = 0;  // EEPROM virgen
+    transaction_register_rpc(RPC_ID_SLOT_SYNC, slot_sync_handler);
 #endif
 }
 
@@ -89,7 +152,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 slot_timer = timer_read32();
                 slot_step  = timer_read32();
                 for (uint8_t i = 0; i < 3; i++) slot_stopped[i] = false;
-                oled_clear();
             }
 #endif
             return false;
@@ -154,6 +216,23 @@ void housekeeping_task_user(void) {
     if (cwl_active && timer_elapsed(cwl_activity) > CWL_IDLE_TIMEOUT) {
         cwl_active = false;
     }
+#ifdef OLED_ENABLE
+    if (is_keyboard_master()) {
+        slot_task_master();
+        static uint32_t last_sync = 0;
+        if (timer_elapsed32(last_sync) > 150) {
+            last_sync = timer_read32();
+            slot_sync_t d = {
+                .state   = slot_state,
+                .reel    = {slot_reel[0], slot_reel[1], slot_reel[2]},
+                .stopped = (uint8_t)((slot_stopped[0] ? 1 : 0) | (slot_stopped[1] ? 2 : 0) | (slot_stopped[2] ? 4 : 0)),
+                .points  = (uint16_t)slot_points,
+                .win     = (int16_t)slot_win,
+            };
+            transaction_rpc_send(RPC_ID_SLOT_SYNC, sizeof(d), &d);
+        }
+    }
+#endif
 }
 
 #ifdef OLED_ENABLE
@@ -194,15 +273,16 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
  * y las franjas de reflejo del lago (se desplazan, filas alternadas en
  * direcciones opuestas para que parezca agua).
  */
+static bool night_base_drawn = false;  // se resetea al volver del tragamonedas
+
 static void render_night(void) {
     static uint32_t tick_timer = 0;
     static uint8_t  tick = 0;
-    static bool     base_drawn = false;
 
-    if (!base_drawn) {
+    if (!night_base_drawn) {
         oled_set_cursor(0, 0);
         oled_write_raw_P(night_base, sizeof(night_base));
-        base_drawn = true;
+        night_base_drawn = true;
     }
     if (timer_elapsed32(tick_timer) < NIGHT_TICK_MS) return;
     tick_timer = timer_read32();
@@ -285,49 +365,8 @@ static void render_status(void) {
 }
 
 
-static const char slot_syms[] = {'7', '$', '*', '#', 'O'};
-
-static void slot_evaluate(void) {
-    uint8_t a = slot_reel[0], b = slot_reel[1], d = slot_reel[2];
-    if (a == b && b == d)                       slot_win = (a == 0) ? 777 : 50;
-    else if (a == b || b == d || a == d)        slot_win = 5;
-    else                                        slot_win = 0;
-    slot_points += slot_win - 1;  // la jugada cuesta 1
-    if (slot_points < 0) slot_points = 0;
-    if (slot_points > 65535) slot_points = 65535;
-    eeconfig_update_user((uint32_t)slot_points);
-    if (slot_win > 0) luna_jump_timer = timer_read32();  // Luna celebra
-}
-
-static void render_slot(void) {
-    if (slot_state == 1) {
-        if (timer_elapsed32(slot_step) > 90) {
-            slot_step = timer_read32();
-            for (uint8_t i = 0; i < 3; i++) {
-                if (!slot_stopped[i]) {
-                    slot_rng = slot_rng * 1103515245u + 12345u;
-                    slot_reel[i] = (slot_rng >> 16) % 5;
-                }
-            }
-        }
-        static const uint16_t stop_at[3] = {900, 1500, 2100};
-        uint32_t el = timer_elapsed32(slot_timer);
-        bool all = true;
-        for (uint8_t i = 0; i < 3; i++) {
-            if (el >= stop_at[i]) slot_stopped[i] = true;
-            if (!slot_stopped[i]) all = false;
-        }
-        if (all) {
-            slot_state = 2;
-            slot_timer = timer_read32();
-            slot_evaluate();
-        }
-    } else if (slot_state == 2 && timer_elapsed32(slot_timer) > 5000) {
-        slot_state = 0;  // vuelve al panel normal
-        oled_clear();
-        return;
-    }
-
+// El casino en la pantalla derecha: dibuja lo que llegó por el sync
+static void render_slot_right(void) {
     oled_set_cursor(0, 0);
     oled_write_P(PSTR("SLOT "), true);
     oled_set_cursor(0, 2);
@@ -335,8 +374,8 @@ static void render_slot(void) {
     oled_set_cursor(0, 3);
     oled_write_P(PSTR("|"), false);
     for (uint8_t i = 0; i < 3; i++) {
-        char s[2] = {slot_syms[slot_reel[i]], 0};
-        oled_write(s, !slot_stopped[i]);  // invertido mientras gira
+        char s[2] = {"7$*#O"[slot_rx.reel[i] % 5], 0};
+        oled_write(s, !(slot_rx.stopped & (1 << i)));  // invertido mientras gira
     }
     oled_write_P(PSTR("|"), false);
     oled_set_cursor(0, 4);
@@ -345,30 +384,37 @@ static void render_slot(void) {
     oled_set_cursor(0, 6);
     oled_write_P(PSTR("PTS"), false);
     oled_set_cursor(0, 7);
-    oled_write(get_u16_str((uint16_t)slot_points, ' '), false);
+    oled_write(get_u16_str(slot_rx.points, ' '), false);
 
     oled_set_cursor(0, 9);
-    if (slot_state == 2) {
-        if (slot_win >= 777)     oled_write_P(PSTR("777!!"), true);
-        else if (slot_win >= 50) oled_write_P(PSTR("+50! "), true);
-        else if (slot_win > 0)   oled_write_P(PSTR("+5   "), false);
-        else                     oled_write_P(PSTR("nada "), false);
+    if (slot_rx.state == 2) {
+        if (slot_rx.win >= 777)     oled_write_P(PSTR("777!!"), true);
+        else if (slot_rx.win >= 50) oled_write_P(PSTR("+50! "), true);
+        else if (slot_rx.win > 0)   oled_write_P(PSTR("+5   "), false);
+        else                        oled_write_P(PSTR("nada "), false);
     } else {
         oled_write_P(PSTR("     "), false);
     }
-
-    render_luna_master();  // Luna sigue abajo (y salta si ganaste)
 }
 
 bool oled_task_user(void) {
     if (is_keyboard_master()) {
-        if (slot_state) {
-            render_slot();
-        } else {
-            render_status();
-        }
+        render_status();
     } else {
-        render_night();
+        // juego activo = estado reciente y distinto de 0; si el sync se
+        // corta más de 2 s, vuelve la noche por seguridad
+        bool gaming = slot_rx.state != 0 && timer_elapsed32(slot_rx_time) < 2000;
+        static bool was_gaming = false;
+        if (gaming != was_gaming) {
+            was_gaming = gaming;
+            oled_clear();
+            night_base_drawn = false;
+        }
+        if (gaming) {
+            render_slot_right();
+        } else {
+            render_night();
+        }
     }
     return false;
 }

@@ -13,12 +13,15 @@
  */
 #define OLED_TIMEOUT 1800000
 
-// La esclava ya no necesita nada sincronizado: su pantalla (night_art.h)
-// es autónoma, y Luna vive en la master donde el WPM es local.
-// OJO: NO agregar SPLIT_MODS_ENABLE ni CAPS_WORD_ENABLE (ni otros syncs
-// split) — en esta placa cuelgan la mitad esclava al arrancar por TRRS
-// (verificado por bisección; el "caps word" está implementado a mano en
-// keymap.c, solo en la master).
+// Transacción custom master->esclava: el estado del tragamonedas se
+// dibuja en la pantalla derecha. Probado en esta placa: las transacciones
+// custom NO cuelgan la esclava.
+#define SPLIT_TRANSACTION_IDS_USER RPC_ID_SLOT_SYNC
+
+// OJO: NO activar CAPS_WORD_ENABLE — demostrado por bisección que cuelga
+// la mitad esclava al arrancar por TRRS (el "caps word" está implementado
+// a mano en keymap.c, solo en la master). SPLIT_MODS_ENABLE quedó sin
+// probar aislado; si algún día se quiere, probar con cautela.
 
 // Apaga el RGB cuando el Mac duerme.
 #define RGBLIGHT_SLEEP
