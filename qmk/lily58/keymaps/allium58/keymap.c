@@ -130,7 +130,7 @@ void housekeeping_task_user(void) {
  *   - badge de capa arriba (invertido en High/Low)
  *   - mods en grilla: C A / ^ S (se iluminan al presionarlos)
  *   - CAPS cuando el caps word casero está activo (doble Shift)
- *   - WPM numérico
+ *   - WPM numérico + récord de la sesión (max)
  *   - abajo, Luna (luna.h) con reacciones en tiempo real: la master
  *     conoce todas las teclas, así que aquí sí puede saltar con espacio,
  *     ladrar con Shift y agacharse con Ctrl/Alt/Cmd; el resto por WPM.
@@ -224,10 +224,19 @@ static void render_status(void) {
     oled_set_cursor(0, 5);
     oled_write_P(cwl_active ? PSTR("CAPS ") : PSTR("     "), cwl_active);
 
+    uint8_t wpm = get_current_wpm();
+    static uint8_t wpm_max = 0;  // récord de la sesión (desde que se conectó)
+    if (wpm > wpm_max) wpm_max = wpm;
+
     oled_set_cursor(0, 6);
-    oled_write(get_u8_str(get_current_wpm(), ' '), false);
+    oled_write(get_u8_str(wpm, ' '), false);
     oled_set_cursor(1, 7);
     oled_write_P(PSTR("wpm"), false);
+
+    oled_set_cursor(0, 8);
+    oled_write(get_u8_str(wpm_max, ' '), false);
+    oled_set_cursor(1, 9);
+    oled_write_P(PSTR("max"), false);
 
     render_luna_master();
 }
