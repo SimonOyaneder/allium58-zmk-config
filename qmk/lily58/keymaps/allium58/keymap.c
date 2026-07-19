@@ -1,5 +1,4 @@
 #include QMK_KEYBOARD_H
-#include <stdio.h>
 
 /*
  * Port a QMK del keymap ZMK del Allium58 (config/lily58.keymap), para el
@@ -49,9 +48,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+/*
+ * Caps Word adaptado a ES-ISO: además de las letras hay que mantener en
+ * mayúscula la Ñ (KC_SCLN), y dejar pasar sin apagarlo la tecla muerta de
+ * acento (KC_QUOT, para Á É Í Ó Ú) y el guión (KC_SLSH en ES-ISO).
+ */
+bool caps_word_press_user(uint16_t keycode) {
+    switch (keycode) {
+        case KC_A ... KC_Z:
+        case KC_SCLN:  // Ñ
+            add_weak_mods(MOD_BIT(KC_LSFT));
+            return true;
+        case KC_1 ... KC_0:
+        case KC_QUOT:  // ´ (tecla muerta: acentos)
+        case KC_SLSH:  // - (guión en ES-ISO)
+        case KC_BSPC:
+        case KC_DEL:
+            return true;
+        default:
+            return false;  // cualquier otra tecla termina Caps Word
+    }
+}
+
 #ifdef OLED_ENABLE
 
-#include "bongo.h"
+#include "luna.h"
 
 /*
  * Pantallas OLED. En el Lily58 van montadas en vertical (el lado largo
@@ -59,16 +80,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
  * panel vertical de 32x128 px (5 columnas x 16 líneas de texto):
  *   - badge de capa arriba (invertido en High/Low)
  *   - mods en grilla: C A / ^ S (se iluminan al presionarlos)
- *   - cronómetro de sesión h:mm (el teclado no tiene reloj real; esto es
- *     tiempo desde que se conectó)
+ *   - CAPS cuando Caps Word está activo (doble Shift = mayúsculas por
+ *     una palabra)
  *   - WPM numérico
  *   - abajo, gráfico horizontal del WPM: 32 muestras cada 1 s (~32 s de
  *     historia) deslizando de derecha a izquierda sobre una línea base.
- * Si en tu montaje la pantalla queda de cabeza, cambia OLED_ROTATION_270
- * por OLED_ROTATION_90 (y avísame para dejarlo fijo).
- * La derecha (esclava) mantiene el Bongo Cat apaisado: los frames de la
- * comunidad están dibujados en 128x32, en la pantalla vertical se ve de
- * lado, como en todos los Lily58 con este mod.
+ * La derecha (esclava), también en vertical: Luna, la perrita de
+ * HellSingCoder, corriendo en el piso de la pantalla según el WPM
+ * (ver luna.h).
+ * Si en tu montaje alguna pantalla queda de cabeza, cambia su
+ * OLED_ROTATION_270 por OLED_ROTATION_90 (y avísame para dejarlo fijo).
  * Ambas se apagan tras OLED_TIMEOUT sin teclear (30 min, config.h).
  */
 
@@ -77,8 +98,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 #define WPM_SAMPLE_MS 1000
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    if (is_keyboard_master()) return OLED_ROTATION_270;
-    return OLED_ROTATION_180;
+    return OLED_ROTATION_270;
 }
 
 static void render_wpm_graph(void) {
@@ -128,10 +148,8 @@ static void render_status(void) {
     oled_write_P(PSTR("S"), mods & MOD_MASK_SHIFT);
 
     oled_set_cursor(0, 5);
-    uint32_t mins = timer_read32() / 60000;
-    char up[6];
-    snprintf(up, sizeof(up), "%2u:%02u", (uint8_t)(mins / 60), (uint8_t)(mins % 60));
-    oled_write(up, false);
+    bool cw = is_caps_word_on();
+    oled_write_P(cw ? PSTR("CAPS ") : PSTR("     "), cw);
 
     oled_set_cursor(0, 6);
     oled_write(get_u8_str(get_current_wpm(), ' '), false);
@@ -145,7 +163,7 @@ bool oled_task_user(void) {
     if (is_keyboard_master()) {
         render_status();
     } else {
-        render_bongo();
+        render_luna();
     }
     return false;
 }
