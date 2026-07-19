@@ -5,15 +5,13 @@
  * fork de qmk_firmware), via la adaptacion de louckousse/keymaps (kyria),
  * basada a su vez en filterpaper. Frames de 32 px de ancho en 3 filas de
  * 32 bytes: calzan exactos con la pantalla vertical (32x128, rot. 270).
- * Corre abajo en la OLED derecha (esclava). Todos los estados son por WPM
- * (sincronizado con SPLIT_WPM_ENABLE; los mods NO se sincronizan porque
- * SPLIT_MODS_ENABLE cuelga la esclava en esta placa):
- *   0 wpm: sentada / <=10: sigilosa / <=40: camina / <70: corre / >=70: ladra
+ * Vive abajo en la OLED izquierda (master), donde conoce teclas y mods en
+ * tiempo real — el despachador de estados está en keymap.c. Aquí solo los
+ * sprites y helpers de dibujo.
  */
 
 #define LUNA_MIN_WALK 10
 #define LUNA_MIN_RUN 40
-#define LUNA_BARK_WPM 70
 #define LUNA_FRAMES 2
 #define LUNA_CHUNK 32              // bytes por fila del sprite (32 px)
 #define LUNA_FRAME_DURATION 200
@@ -114,25 +112,15 @@ static const char PROGMEM luna_sneak[LUNA_FRAMES][3][LUNA_CHUNK] = {
         }
     };
 
-static void luna_draw(const char (*frames)[3][LUNA_CHUNK], uint8_t frame) {
+static void luna_draw_at(const char (*frames)[3][LUNA_CHUNK], uint8_t frame, uint8_t row) {
     for (uint8_t r = 0; r < 3; r++) {
-        oled_set_cursor(0, LUNA_ROW + r);
+        oled_set_cursor(0, row + r);
         oled_write_raw_P(frames[frame][r], LUNA_CHUNK);
     }
 }
 
-static void render_luna(void) {
-    static uint32_t anim_timer = 0;
-    static uint8_t  frame = 0;
-
-    if (timer_elapsed32(anim_timer) < LUNA_FRAME_DURATION) return;
-    anim_timer = timer_read32();
-    frame = (frame + 1) % LUNA_FRAMES;
-
-    uint8_t wpm = get_current_wpm();
-    if (wpm == 0)                     luna_draw(luna_sit, frame);
-    else if (wpm <= LUNA_MIN_WALK)    luna_draw(luna_sneak, frame);
-    else if (wpm <= LUNA_MIN_RUN)     luna_draw(luna_walk, frame);
-    else if (wpm < LUNA_BARK_WPM)     luna_draw(luna_run, frame);
-    else                              luna_draw(luna_bark, frame);
+static void luna_clear_row(uint8_t row) {
+    static const char PROGMEM blank[LUNA_CHUNK] = {0};
+    oled_set_cursor(0, row);
+    oled_write_raw_P(blank, LUNA_CHUNK);
 }

@@ -31,8 +31,17 @@ enum custom_keycodes {
 
 static void cwl_process(uint16_t keycode, keyrecord_t *record);
 
+#ifdef OLED_ENABLE
+static uint32_t luna_jump_timer = 0;  // espacio -> Luna salta (OLED izquierda)
+#endif
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     cwl_process(keycode, record);
+#ifdef OLED_ENABLE
+    if (record->event.pressed && keycode == KC_SPC) {
+        luna_jump_timer = timer_read32();
+    }
+#endif
     switch (keycode) {
         case ES_GRAVE:
             if (record->event.pressed) {
@@ -120,22 +129,23 @@ void housekeeping_task_user(void) {
  * panel vertical de 32x128 px (5 columnas x 16 líneas de texto):
  *   - badge de capa arriba (invertido en High/Low)
  *   - mods en grilla: C A / ^ S (se iluminan al presionarlos)
- *   - CAPS cuando Caps Word está activo (doble Shift = mayúsculas por
- *     una palabra)
+ *   - CAPS cuando el caps word casero está activo (doble Shift)
  *   - WPM numérico
- *   - abajo, gráfico horizontal del WPM: 32 muestras cada 1 s (~32 s de
- *     historia) deslizando de derecha a izquierda sobre una línea base.
- * La derecha (esclava), también en vertical: Luna, la perrita de
- * HellSingCoder, corriendo en el piso de la pantalla según el WPM
- * (ver luna.h).
+ *   - abajo, Luna (luna.h) con reacciones en tiempo real: la master
+ *     conoce todas las teclas, así que aquí sí puede saltar con espacio,
+ *     ladrar con Shift y agacharse con Ctrl/Alt/Cmd; el resto por WPM.
+ * La derecha (esclava): gráfico grande del WPM (lo único que la esclava
+ * recibe sin riesgo por el TRRS), 32 muestras cada 2 s ≈ 1 min de
+ * historia, con el número arriba.
  * Si en tu montaje alguna pantalla queda de cabeza, cambia su
  * OLED_ROTATION_270 por OLED_ROTATION_90 (y avísame para dejarlo fijo).
  * Ambas se apagan tras OLED_TIMEOUT sin teclear (30 min, config.h).
  */
 
-#define WPM_GRAPH_TOP 64    // el gráfico ocupa la mitad inferior (y 64-127)
+#define WPM_GRAPH_TOP 24    // el gráfico parte bajo el número (y 24-127)
 #define WPM_GRAPH_MAX 100   // wpm que toca el techo del gráfico
-#define WPM_SAMPLE_MS 1000
+#define WPM_SAMPLE_MS 2000
+#define LUNA_JUMP_MS 250    // cuánto dura el salto tras presionar espacio
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     return OLED_ROTATION_270;
@@ -169,6 +179,30 @@ static void render_wpm_graph(void) {
     }
 }
 
+static void render_luna_master(void) {
+    static uint32_t anim_timer = 0;
+    static uint8_t  frame = 0;
+    if (timer_elapsed32(anim_timer) > LUNA_FRAME_DURATION) {
+        anim_timer = timer_read32();
+        frame = (frame + 1) % LUNA_FRAMES;
+    }
+
+    bool jumping = timer_elapsed32(luna_jump_timer) < LUNA_JUMP_MS;
+    // al saltar se dibuja una fila más arriba y se limpia el piso;
+    // al aterrizar, se limpia la fila del salto
+    luna_clear_row(jumping ? LUNA_ROW + 2 : LUNA_ROW - 1);
+
+    uint8_t mods = get_mods();
+    uint8_t wpm  = get_current_wpm();
+    const char(*frames)[3][LUNA_CHUNK];
+    if (mods & MOD_MASK_SHIFT)     frames = luna_bark;
+    else if (mods & MOD_MASK_CAG)  frames = luna_sneak;
+    else if (wpm <= LUNA_MIN_WALK) frames = luna_sit;
+    else if (wpm <= LUNA_MIN_RUN)  frames = luna_walk;
+    else                           frames = luna_run;
+    luna_draw_at(frames, frame, jumping ? LUNA_ROW - 1 : LUNA_ROW);
+}
+
 static void render_status(void) {
     oled_set_cursor(0, 0);
     switch (get_highest_layer(layer_state)) {
@@ -195,6 +229,14 @@ static void render_status(void) {
     oled_set_cursor(1, 7);
     oled_write_P(PSTR("wpm"), false);
 
+    render_luna_master();
+}
+
+static void render_wpm_panel(void) {
+    oled_set_cursor(1, 0);
+    oled_write_P(PSTR("WPM"), false);
+    oled_set_cursor(1, 1);
+    oled_write(get_u8_str(get_current_wpm(), ' '), false);
     render_wpm_graph();
 }
 
@@ -202,7 +244,7 @@ bool oled_task_user(void) {
     if (is_keyboard_master()) {
         render_status();
     } else {
-        render_luna();
+        render_wpm_panel();
     }
     return false;
 }
