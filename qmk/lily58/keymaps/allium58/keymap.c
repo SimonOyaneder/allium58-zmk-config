@@ -32,6 +32,8 @@ enum custom_keycodes {
     ES_CARET,
     // Palanca del tragamonedas (tecla interior derecha, sobre el pulgar).
     SLOT_SPIN,
+    // Cara o sello (tecla interior izquierda, sobre el pulgar).
+    COIN_FLIP,
 };
 
 static void cwl_process(uint16_t keycode, keyrecord_t *record);
@@ -60,12 +62,20 @@ static int32_t  slot_points = 0;
 static int32_t  slot_win = 0;
 static uint32_t slot_rng = 12345;
 
+// Cara o sello: sin puntos, puro RNG (la semilla se mezcla con el
+// instante exacto de la pulsación — entropía humana real).
+static uint8_t  coin_state = 0;  // 0 nada, 1 girando, 2 resultado
+static uint8_t  coin_face  = 0;  // 0 cara, 1 sello
+static uint32_t coin_timer = 0;
+
 typedef struct {
     uint8_t  state;
     uint8_t  reel[3];
     uint8_t  stopped;  // bits 0-2
     int16_t  points;   // con signo: la deuda existe
     int16_t  win;
+    uint8_t  coin_state;
+    uint8_t  coin_face;
 } slot_sync_t;
 static slot_sync_t slot_rx;          // lo último recibido en la esclava
 static uint32_t    slot_rx_time = 0;
@@ -116,6 +126,14 @@ static void slot_task_master(void) {
     } else if (slot_state == 2 && timer_elapsed32(slot_timer) > 5000) {
         slot_state = 0;  // la derecha vuelve a la noche
     }
+
+    // cara o sello
+    if (coin_state == 1 && timer_elapsed32(coin_timer) > 1600) {
+        coin_state = 2;  // aterriza
+        coin_timer = timer_read32();
+    } else if (coin_state == 2 && timer_elapsed32(coin_timer) > 3500) {
+        coin_state = 0;
+    }
 }
 #endif
 
@@ -158,6 +176,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 slot_timer = timer_read32();
                 slot_step  = timer_read32();
                 for (uint8_t i = 0; i < 3; i++) slot_stopped[i] = false;
+            }
+#endif
+            return false;
+
+        case COIN_FLIP:
+#ifdef OLED_ENABLE
+            if (record->event.pressed && coin_state != 1) {
+                slot_rng ^= timer_read32();  // entropía del instante del flip
+                slot_rng = slot_rng * 1103515245u + 12345u;
+                coin_face  = (slot_rng >> 16) & 1;
+                coin_state = 1;
+                coin_timer = timer_read32();
             }
 #endif
             return false;
@@ -234,6 +264,8 @@ void housekeeping_task_user(void) {
                 .stopped = (uint8_t)((slot_stopped[0] ? 1 : 0) | (slot_stopped[1] ? 2 : 0) | (slot_stopped[2] ? 4 : 0)),
                 .points  = (int16_t)slot_points,
                 .win     = (int16_t)slot_win,
+                .coin_state = coin_state,
+                .coin_face  = coin_face,
             };
             transaction_rpc_send(RPC_ID_SLOT_SYNC, sizeof(d), &d);
         }
@@ -501,24 +533,94 @@ static void render_slot_right(void) {
     render_slot_feedback(timer_elapsed32(fb_timer));
 }
 
+// Cara o sello en la pantalla derecha: vuelo con giro 3D y aterrizaje
+static void render_coin_right(void) {
+    static uint8_t  cf_prev = 0xFF;
+    static uint32_t cf_timer = 0;
+    if (slot_rx.coin_state != cf_prev) {
+        cf_prev  = slot_rx.coin_state;
+        cf_timer = timer_read32();
+    }
+    uint32_t t = timer_elapsed32(cf_timer);
+
+    for (uint8_t y = 8; y < 128; y++) {  // limpia el área de vuelo
+        for (uint8_t x = 0; x < 32; x++) {
+            oled_write_pixel(x, y, false);
+        }
+    }
+    oled_set_cursor(0, 0);
+    oled_write_P(PSTR("FLIP "), true);
+
+    if (slot_rx.coin_state == 1) {
+        // vuelo: parábola hacia arriba y de vuelta, girando (la elipse se
+        // aplasta y estira como moneda de canto)
+        float ft = t > 1600 ? 1.0f : t / 1600.0f;
+        uint8_t cy = 88 - (uint8_t)(50 * sinf(3.1416f * ft));
+        float squash = cosf(t / 90.0f);
+        if (squash < 0) squash = -squash;
+        uint8_t ry = 1 + (uint8_t)(8 * squash);
+        for (int8_t dy = -9; dy <= 9; dy++) {
+            for (int8_t dx = -9; dx <= 9; dx++) {
+                float d = (dx * dx) / 81.0f + (dy * dy) / (float)(ry * ry);
+                if (d <= 1.0f) {
+                    bool edge = d > 0.62f;
+                    oled_write_pixel(16 + dx, cy + dy, edge || ((dx + cy + dy) & 1));
+                }
+            }
+        }
+    } else {
+        // aterrizó: moneda grande con su cara
+        uint8_t cy = 58;
+        for (int8_t dy = -11; dy <= 11; dy++) {
+            for (int8_t dx = -11; dx <= 11; dx++) {
+                int16_t d2 = dx * dx + dy * dy;
+                if (d2 <= 121) {
+                    oled_write_pixel(16 + dx, cy + dy, d2 >= 96 || d2 <= 2);
+                }
+            }
+        }
+        if (slot_rx.coin_face == 0) {
+            // CARA: carita sonriente
+            oled_write_pixel(12, cy - 4, true); oled_write_pixel(13, cy - 4, true);
+            oled_write_pixel(19, cy - 4, true); oled_write_pixel(20, cy - 4, true);
+            for (int8_t dx = -4; dx <= 4; dx++) {
+                oled_write_pixel(16 + dx, cy + 3 + (dx * dx) / 8, true);
+            }
+        } else {
+            // SELLO: estrella de ocho puntas
+            for (int8_t d = -5; d <= 5; d++) {
+                oled_write_pixel(16 + d, cy, true);
+                oled_write_pixel(16, cy + d, true);
+                if (d >= -3 && d <= 3) {
+                    oled_write_pixel(16 + d, cy + d, true);
+                    oled_write_pixel(16 + d, cy - d, true);
+                }
+            }
+        }
+        oled_set_cursor(0, 11);
+        oled_write_P(slot_rx.coin_face == 0 ? PSTR("CARA ") : PSTR("SELLO"), true);
+    }
+}
+
 bool oled_task_user(void) {
     if (is_keyboard_master()) {
         render_status();
     } else {
-        // juego activo = estado reciente y distinto de 0; si el sync se
-        // corta más de 2 s, vuelve la noche por seguridad
-        bool gaming = slot_rx.state != 0 && timer_elapsed32(slot_rx_time) < 2000;
-        static bool was_gaming = false;
-        if (gaming != was_gaming) {
-            was_gaming = gaming;
+        // prioridad: moneda > casino > noche; si el sync se corta más de
+        // 2 s, vuelve la noche por seguridad
+        bool fresh = timer_elapsed32(slot_rx_time) < 2000;
+        uint8_t mode = 0;
+        if (fresh && slot_rx.coin_state != 0)      mode = 2;
+        else if (fresh && slot_rx.state != 0)      mode = 1;
+        static uint8_t was_mode = 0;
+        if (mode != was_mode) {
+            was_mode = mode;
             oled_clear();
             night_base_drawn = false;
         }
-        if (gaming) {
-            render_slot_right();
-        } else {
-            render_night();
-        }
+        if (mode == 2)      render_coin_right();
+        else if (mode == 1) render_slot_right();
+        else                render_night();
     }
     return false;
 }
@@ -540,15 +642,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      *                   | LAlt | HIGH | LCmd | /Space  /       \Space \  |Enter | LOW  | RAlt |
      *                   `----------------------------'           '------''--------------------'
      *
-     * La tecla interior derecha (sobre el pulgar, antes muerta) es la
-     * palanca del tragamonedas 🎰: cada toque hace girar los rodillos en
-     * la pantalla izquierda.
+     * Las dos teclas interiores (sobre los pulgares, antes muertas):
+     *   izquierda = cara o sello 🪙 · derecha = palanca del tragamonedas 🎰
+     * Ambos juegos se muestran en la pantalla derecha.
      */
     [_MAC] = LAYOUT(
         KC_ESC,  KC_1, KC_2, KC_3, KC_4, KC_5,                        KC_6, KC_7, KC_8,    KC_9,   KC_0,    KC_MINS,
         KC_TAB,  KC_Q, KC_W, KC_E, KC_R, KC_T,                        KC_Y, KC_U, KC_I,    KC_O,   KC_P,    KC_BSPC,
         KC_LCTL, KC_A, KC_S, KC_D, KC_F, KC_G,                        KC_H, KC_J, KC_K,    KC_L,   KC_SCLN, KC_QUOT,
-        KC_LSFT, KC_Z, KC_X, KC_C, KC_V, KC_B, XXXXXXX,     SLOT_SPIN, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_RSFT,
+        KC_LSFT, KC_Z, KC_X, KC_C, KC_V, KC_B, COIN_FLIP,     SLOT_SPIN, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_RSFT,
                    KC_LALT, MO(_HIGH), KC_LGUI, KC_SPC,     KC_SPC, KC_ENT, MO(_LOW), KC_RALT
     ),
 
